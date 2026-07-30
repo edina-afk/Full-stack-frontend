@@ -156,6 +156,21 @@ placeholder="09..."
               className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+          {/* Address */}
+<div className="flex flex-col">
+  <label className="mb-1.5 text-sm font-semibold text-gray-700">
+    Address (አድራሻ)
+  </label>
+
+  <input
+    type="text"
+    name="address"
+    value={formData.address}
+    onChange={handleChange}
+    placeholder="Enter customer address"
+    className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+  />
+</div>
 
           {/* Date */}
           <div className="flex flex-col">
