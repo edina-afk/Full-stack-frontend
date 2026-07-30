@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
+import api from "../../api/axios";
 
 export default function ManageEvent() {
   const navigate = useNavigate();
@@ -9,12 +10,18 @@ export default function ManageEvent() {
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetch("http://localhost:3000/members")
-      .then((res) => res.json())
-      .then((data) => setCustomers(data))
-      .catch((err) => console.log(err));
-  }, []);
+   useEffect(() => {
+  fetchMembers();
+}, []);
+
+const fetchMembers = async () => {
+  try {
+    const res = await api.get("/members");
+    setCustomers(res.data);
+  } catch (err) {
+    console.log(err.response?.data || err.message);
+  }
+};
 
   const filteredCustomers = customers.filter(
     (c) =>

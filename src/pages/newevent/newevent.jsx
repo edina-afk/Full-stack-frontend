@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
+import api from "../../api/axios";
 
 export default function NewEvent() {
   const navigate = useNavigate();
@@ -67,83 +68,24 @@ try{
 
 
 // CREATE MEMBER
-
-const memberResponse = await fetch(
-"http://localhost:3000/members",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-fullName:formData.fullName,
-
-phone:formData.phone,
-
-address:formData.address
-
-})
-
+ const memberResponse = await api.post("/members", {
+  fullName: formData.fullName,
+  phone: formData.phone,
+  address: formData.address,
 });
 
-
-if(!memberResponse.ok){
-
-throw new Error("Failed to create member");
-
-}
-
-
-const member = await memberResponse.json();
-
-
-
+const member = memberResponse.data;
 
 // CREATE LEDGER
-
-const ledgerResponse = await fetch(
-"http://localhost:3000/ledger",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-memberId:member.id,
-
-date:formData.date,
-
-itemName:formData.itemName,
-
-quantity:quantity,
-
-unitPrice:unitPrice,
-
-paidAmount:paidAmount,
-
-
-note:
-`${formData.receiptNumber} ${formData.bankPaymentEntry}`
-
-})
-
+await api.post("/ledger", {
+  memberId: member.id,
+  date: formData.date,
+  itemName: formData.itemName,
+  quantity,
+  unitPrice,
+  paidAmount,
+  note: `${formData.receiptNumber} ${formData.bankPaymentEntry}`,
 });
-
-
-if(!ledgerResponse.ok){
-
-throw new Error("Failed to create ledger");
-
-}
-
 
 // SUCCESS
 
