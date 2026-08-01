@@ -151,7 +151,6 @@ type="tel"
 name="phone"
 value={formData.phone}
 onChange={handleChange}
-required
 placeholder="09..."
 
               className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

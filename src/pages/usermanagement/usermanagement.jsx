@@ -227,7 +227,9 @@ export default function UserManagement() {
 
                 <tr>
 
-
+            <th className="p-3">
+              Receipt No
+            </th>
                   <th className="p-3">
                     Date
                   </th>
@@ -320,10 +322,14 @@ export default function UserManagement() {
                     {ledger.itemName}
 
                   </td>
+             
+
+             <td className="p-3">
+  {ledger.receiptNo || "-"}
+</td>
 
 
-
-
+      
 
                   <td className="p-3">
 
@@ -535,7 +541,7 @@ export default function UserManagement() {
               <tr>
 
                 <td
-                colSpan="9"
+                colSpan="10"
                 className="p-6 text-center text-gray-400"
                 >
 
