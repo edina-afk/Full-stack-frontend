@@ -20,6 +20,12 @@ const Data = [
     icon: MdAddCircleOutline,
     size: 30,
   },
+  // {
+  //   path: "/usermanagement",
+  //   // title: "View",
+  //   icon: FaUsers,
+  //   size: 30,
+  // },
   {
     path: "/user",
     title: "User",

@@ -59,38 +59,46 @@ const Signin = () => {
     setErrors(validationErrors);
     return;
   }
+     try {
 
-  try {
+  const response = await api.post("/auth/signin", {
+    email: formData.email,
+    password: formData.password,
+  });
 
-    const response = await api.post("/auth/signin", {
-      email: formData.email,
-      password: formData.password,
-    });
-
-
-    // save JWT
-    localStorage.setItem(
-      "token",
-      response.data.access_token
-    );
+  console.log("LOGIN RESPONSE:", response.data);
 
 
-    setSubmitted(true);
+  // save JWT
+  localStorage.setItem(
+    "token",
+    response.data.access_token
+  );
 
 
-    // go dashboard
-    window.location.href = "/dashboard";
+  // save user information
+  localStorage.setItem(
+    "user",
+    JSON.stringify(response.data.user)
+  );
 
 
-  } catch(error) {
+  setSubmitted(true);
 
-    console.log(error.response?.data);
 
-    setErrors({
-      email: error.response?.data?.message || "Login failed"
-    });
+  // go dashboard
+  window.location.href = "/dashboard";
 
-  }
+
+} catch(error) {
+
+  console.log(error.response?.data);
+
+  setErrors({
+    email: error.response?.data?.message || "Login failed"
+  });
+
+}
 };
   // --- Forgot password handlers ---
   const openForgotPassword = (e) => {

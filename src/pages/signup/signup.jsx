@@ -5,11 +5,12 @@ import api from "../../api/axios";
 
 const Signup = () => {
   // --- Signup Form State ---
-   const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
   firstName: "",
   lastName: "",
   email: "",
   password: "",
+  confirmPassword: "",
 });
 
   const [errors, setErrors] = useState({});
@@ -85,6 +86,7 @@ const Signup = () => {
     newOtp[index] = value.substring(value.length - 1); // Get last typed char
     setOtp(newOtp);
 
+    
     // Auto-focus to next box if value is typed
     if (value && index < 5 && inputRefs.current[index + 1]) {
       inputRefs.current[index + 1].focus();
@@ -98,6 +100,8 @@ const Signup = () => {
     }
   };
 
+ 
+
   const handleVerifyOtp = async (e) => {
   e.preventDefault();
 
@@ -109,21 +113,33 @@ const Signup = () => {
   }
 
   try {
-     const response = await api.post("/auth/verify-otp", {
-  email: formData.email,
-  otp: otpValue,
-});
+    console.log("VERIFY BUTTON CLICKED");
+    console.log("OTP VALUE:", otpValue);
 
+    const response = await api.post("/auth/verify-otp", {
+      email: formData.email,
+      otp: otpValue,
+    });
 
-localStorage.setItem(
-  "token",
-  response.data.access_token
-);
+    console.log("USER FROM BACKEND:", response.data.user);
 
+    localStorage.setItem(
+      "token",
+      response.data.access_token
+    );
 
-window.location.href = "/dashboard";
+    localStorage.setItem(
+      "user",
+      JSON.stringify(response.data.user)
+    );
+
     setOtpError("");
+
+    // redirect after saving data
+    window.location.replace("/dashboard");
+
   } catch (error) {
+    console.log(error.response?.data);
     setOtpError("Invalid OTP");
   }
 };
