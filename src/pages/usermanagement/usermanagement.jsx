@@ -265,13 +265,13 @@ const exportPDF = () => {
 
                 <tr>
 
-            <th className="p-3">
-              Receipt No
-            </th>
+           
                   <th className="p-3">
                     Date
                   </th>
-
+   <th className="p-3">
+              Receipt No
+            </th>
 
                   <th className="p-3">
                     Item
