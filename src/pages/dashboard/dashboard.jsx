@@ -11,141 +11,167 @@ import {
   MdAttachMoney,
   MdAccountBalanceWallet,
 } from "react-icons/md";
- 
- 
-  
- 
+
+
 export default function ManageEvent() {
+
   const navigate = useNavigate();
+
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Load stored customers on mount
-  
-useEffect(() => {
-  fetchMembers();
-}, []);
 
-const fetchMembers = async () => {
-  try {
-    const res = await api.get("/members");
-
-    console.log("MEMBERS RESPONSE:", res.data);
-
-    setCustomers(
-      Array.isArray(res.data)
-        ? res.data
-        : []
-    );
-
-  } catch (err) {
-    console.log(err.response?.data || err.message);
-    setCustomers([]);
-  }
-};
-
-  // Calculate Dashboard Metrics
-  
-  // Calculate Dashboard Metrics
-const totalCustomersCount = Array.isArray(customers)
-  ? customers.length
-  : 0;
-
-const totalRevenue = customers.reduce(
-  (sum, customer) =>
-    sum +
-    (customer.ledgers || []).reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.totalPrice || 0),
-      0
-    ),
-  0
-);
+  useEffect(() => {
+    fetchMembers();
+  }, []);
 
 
-const totalCollected = customers.reduce(
-  (sum, customer) =>
-    sum +
-    (customer.ledgers || []).reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.paidAmount || 0),
-      0
-    ),
-  0
-);
+  const fetchMembers = async () => {
+
+    try {
+
+      const res = await api.get("/members");
+
+      console.log("MEMBERS RESPONSE:", res.data);
+      console.log("IS ARRAY:", Array.isArray(res.data));
 
 
-const totalPendingBalance = customers.reduce(
-  (sum, customer) =>
-    sum +
-    (customer.ledgers || []).reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.remaining || 0),
-      0
-    ),
-  0
-);
+      setCustomers(
+        Array.isArray(res.data)
+          ? res.data
+          : []
+      );
 
 
-const totalCollected = customers.reduce(
-  (sum, customer) =>
-    sum +
-    (customer.ledgers || []).reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.paidAmount || 0),
-      0
-    ),
-  0
-);
+    } catch (err) {
+
+      console.log(
+        err.response?.data || err.message
+      );
+
+      setCustomers([]);
+
+    }
+
+  };
 
 
-const totalPendingBalance = customers.reduce(
-  (sum, customer) =>
-    sum +
-    (customer.ledgers || []).reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.remaining || 0),
-      0
-    ),
-  0
-);
 
-const totalCollected = customers.reduce(
-  (sum, customer) =>
-    sum +
-    customer.ledgers?.reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.paidAmount || 0),
-      0
-    ),
-  0
-);
+  // Dashboard calculations
 
-const totalPendingBalance = customers.reduce(
-  (sum, customer) =>
-    sum +
-    customer.ledgers?.reduce(
-      (ledgerSum, ledger) =>
-        ledgerSum + Number(ledger.remaining || 0),
-      0
-    ),
-  0
-);
-  // Search filter
-const filteredCustomers = customers
-  .filter(
-    (c) =>
-      c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone?.includes(searchTerm)
-  )
-  .sort((a, b) =>
-    a.fullName.localeCompare(b.fullName)
+  const totalCustomersCount = customers.length;
+
+
+
+  const totalRevenue = customers.reduce(
+    (sum, customer) => {
+
+      const ledgers = Array.isArray(customer.ledgers)
+        ? customer.ledgers
+        : [];
+
+
+      return (
+        sum +
+        ledgers.reduce(
+          (ledgerSum, ledger) =>
+            ledgerSum + Number(ledger.totalPrice || 0),
+          0
+        )
+      );
+
+    },
+    0
   );
 
-  // Navigation handler for View button
+
+
+
+  const totalCollected = customers.reduce(
+    (sum, customer) => {
+
+      const ledgers = Array.isArray(customer.ledgers)
+        ? customer.ledgers
+        : [];
+
+
+      return (
+        sum +
+        ledgers.reduce(
+          (ledgerSum, ledger) =>
+            ledgerSum + Number(ledger.paidAmount || 0),
+          0
+        )
+      );
+
+    },
+    0
+  );
+
+
+
+
+  const totalPendingBalance = customers.reduce(
+    (sum, customer) => {
+
+      const ledgers = Array.isArray(customer.ledgers)
+        ? customer.ledgers
+        : [];
+
+
+      return (
+        sum +
+        ledgers.reduce(
+          (ledgerSum, ledger) =>
+            ledgerSum + Number(ledger.remaining || 0),
+          0
+        )
+      );
+
+    },
+    0
+  );
+
+
+
+  // Search
+
+  const filteredCustomers = customers
+    .filter(
+      (customer) =>
+        customer.fullName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase())
+
+        ||
+
+        customer.phone
+          ?.includes(searchTerm)
+    )
+
+    .sort(
+      (a,b)=>
+        a.fullName.localeCompare(
+          b.fullName
+        )
+    );
+
+
+
+
   const handleViewCustomer = (customer) => {
-    navigate("/usermanagement", { state: { customer } });
+
+    navigate(
+      "/usermanagement",
+      {
+        state:{
+          customer
+        }
+      }
+    );
+
   };
+
 
   return (
     <CenterLayout>
