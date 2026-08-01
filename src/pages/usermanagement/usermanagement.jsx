@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import api from "../../api/axios";
-
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function UserManagement() {
 
@@ -113,7 +114,40 @@ export default function UserManagement() {
 
 
 
+const exportPDF = () => {
+  const doc = new jsPDF();
 
+  doc.setFontSize(18);
+  doc.text(`Customer: ${customer.fullName}`, 14, 20);
+
+  autoTable(doc, {
+    startY: 30,
+    head: [[
+      "Receipt No",
+      "Date",
+      "Item",
+      "Qty",
+      "Unit Price",
+      "Total",
+      "Paid",
+      "Remaining",
+      "Note"
+    ]],
+    body: customer.ledgers.map((ledger) => [
+      ledger.receiptNo || "-",
+      new Date(ledger.date).toLocaleDateString(),
+      ledger.itemName,
+      ledger.quantity,
+      ledger.unitPrice,
+      ledger.totalPrice,
+      ledger.paidAmount,
+      ledger.remaining,
+      ledger.note || "-"
+    ]),
+  });
+
+  doc.save(`${customer.fullName}.pdf`);
+};
 
   return (
 
@@ -129,14 +163,18 @@ export default function UserManagement() {
         <div className="bg-white rounded-xl shadow p-6 mb-6">
 
 
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+<div className="flex justify-between items-center mb-4">
+  <h1 className="text-2xl font-bold text-gray-800">
+    Customer Details
+  </h1>
 
-            Customer Details
-
-          </h1>
-
-
-
+  <button
+    onClick={exportPDF}
+    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold"
+  >
+    📄 Export PDF
+  </button>
+</div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
 
