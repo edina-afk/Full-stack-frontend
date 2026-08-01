@@ -29,23 +29,82 @@ useEffect(() => {
 const fetchMembers = async () => {
   try {
     const res = await api.get("/members");
-    setCustomers(res.data);
+
+    console.log("MEMBERS RESPONSE:", res.data);
+
+    setCustomers(
+      Array.isArray(res.data)
+        ? res.data
+        : []
+    );
+
   } catch (err) {
     console.log(err.response?.data || err.message);
+    setCustomers([]);
   }
 };
 
   // Calculate Dashboard Metrics
   
   // Calculate Dashboard Metrics
-const totalCustomersCount = customers.length;
+const totalCustomersCount = Array.isArray(customers)
+  ? customers.length
+  : 0;
 
 const totalRevenue = customers.reduce(
   (sum, customer) =>
     sum +
-    customer.ledgers?.reduce(
+    (customer.ledgers || []).reduce(
       (ledgerSum, ledger) =>
         ledgerSum + Number(ledger.totalPrice || 0),
+      0
+    ),
+  0
+);
+
+
+const totalCollected = customers.reduce(
+  (sum, customer) =>
+    sum +
+    (customer.ledgers || []).reduce(
+      (ledgerSum, ledger) =>
+        ledgerSum + Number(ledger.paidAmount || 0),
+      0
+    ),
+  0
+);
+
+
+const totalPendingBalance = customers.reduce(
+  (sum, customer) =>
+    sum +
+    (customer.ledgers || []).reduce(
+      (ledgerSum, ledger) =>
+        ledgerSum + Number(ledger.remaining || 0),
+      0
+    ),
+  0
+);
+
+
+const totalCollected = customers.reduce(
+  (sum, customer) =>
+    sum +
+    (customer.ledgers || []).reduce(
+      (ledgerSum, ledger) =>
+        ledgerSum + Number(ledger.paidAmount || 0),
+      0
+    ),
+  0
+);
+
+
+const totalPendingBalance = customers.reduce(
+  (sum, customer) =>
+    sum +
+    (customer.ledgers || []).reduce(
+      (ledgerSum, ledger) =>
+        ledgerSum + Number(ledger.remaining || 0),
       0
     ),
   0
