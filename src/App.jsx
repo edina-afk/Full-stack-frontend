@@ -1,7 +1,6 @@
-import { Route, Routes } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import "./App.css";
-import CenterLayout from "./component/pageLayout/centerLayout";
-import RightLayout from "./component/pageLayout/rightLayout";
+
 import Dashboard from "./pages/dashboard/dashboard";
 import Newevent from "./pages/newevent/newevent";
 import Manageevent from "./pages/manageevent/manageevent";
@@ -10,31 +9,118 @@ import UserManagement from "./pages/usermanagement/usermanagement";
 import Signup from "./pages/signup/signup";
 import Signin from "./pages/signin/signin";
 import Landing from "./pages/landing/landing";
- 
+
+import ProtectedRoute from "./component/ProtectedRoute";
+
 
 function App() {
 
-  const token = localStorage.getItem("token");
   return (
-    <div className="bg-custom z-0">
-      <Routes>
-       <Route 
-       path="/" 
-       element={token ? <Dashboard /> : <Signin />} 
-     />
-     <Route path="/signup" element={<Signup />} />
-     <Route path="/signin" element={<Signin />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/newevent" element={<Newevent />} />
-        <Route path="/usermanagement/:id" element={<UserManagement />} />
-         <Route path="/usermanagement" element={<UserManagement />} />
-     
-        <Route path="/Manageevent" element={<Manageevent />} />
-        <Route path="/user" element={<User />} />
-        <Route path="/landing" element={<Landing />} />
-      </Routes>
-    </div>
+
+    <Routes>
+
+
+      {/* Public pages */}
+
+      <Route 
+        path="/signin" 
+        element={<Signin />} 
+      />
+
+
+      <Route 
+        path="/signup" 
+        element={<Signup />} 
+      />
+
+
+      <Route 
+        path="/landing" 
+        element={<Landing />} 
+      />
+
+
+
+      {/* Protected pages */}
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/newevent"
+        element={
+          <ProtectedRoute>
+            <Newevent />
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/manageevent"
+        element={
+          <ProtectedRoute>
+            <Manageevent />
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/usermanagement"
+        element={
+          <ProtectedRoute>
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/usermanagement/:id"
+        element={
+          <ProtectedRoute>
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/user"
+        element={
+          <ProtectedRoute>
+            <User />
+          </ProtectedRoute>
+        }
+      />
+
+
+
+      {/* Default */}
+
+      <Route
+        path="*"
+        element={
+          localStorage.getItem("token")
+          ? <Dashboard />
+          : <Signin />
+        }
+      />
+
+
+    </Routes>
+
   );
+
 }
+
 
 export default App;
