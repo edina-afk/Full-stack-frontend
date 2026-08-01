@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import api from "../../api/axios";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import {
   MdAdd,
@@ -173,6 +175,27 @@ export default function ManageEvent() {
   };
 
 
+  const exportPDF = () => {
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.text("Customer Report", 14, 20);
+
+  const tableData = filteredCustomers.map((customer) => [
+    customer.fullName,
+    customer.phone,
+    customer.address || "-",
+  ]);
+
+  autoTable(doc, {
+    head: [["Customer Name", "Phone", "Address"]],
+    body: tableData,
+    startY: 30,
+  });
+
+  doc.save("customers-report.pdf");
+};
+
   return (
     <CenterLayout>
       {/* Container stretch fixes applied here */}
@@ -188,6 +211,14 @@ export default function ManageEvent() {
               Track sales, recent customer registrations, and outstanding balances.
             </p>
           </div>
+
+           <button
+    onClick={exportPDF}
+    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition"
+  >
+    📄 Export PDF
+  </button>
+
           <button
             onClick={() => navigate("/newevent")}
             className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer shrink-0"
