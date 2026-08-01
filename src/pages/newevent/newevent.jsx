@@ -77,7 +77,7 @@ try{
 const member = memberResponse.data;
 
 // CREATE LEDGER
-await api.post("/ledgers", {
+await api.post("/ledger", {
   memberId: member.id,
   date: formData.date,
   itemName: formData.itemName,

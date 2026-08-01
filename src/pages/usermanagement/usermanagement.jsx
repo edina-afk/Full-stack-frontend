@@ -83,7 +83,7 @@ export default function UserManagement() {
 
     try{
 
-       await api.patch(`/ledgers/${id}`,{
+       await api.patch(`/ledger/${id}`,{
 
         quantity:Number(editData.quantity),
 
