@@ -5,6 +5,7 @@ function NavigationBar() {
 
   const [showDropdown, setShowDropdown] = useState(false);
 
+
   const [user] = useState(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -20,12 +21,22 @@ function NavigationBar() {
   });
 
 
+
+  const toggleDropdown = () => {
+    setShowDropdown((prev) => !prev);
+  };
+
+
+
   const handleLogout = () => {
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
     window.location.href = "/signin";
+
   };
+
 
 
   return (
@@ -33,34 +44,35 @@ function NavigationBar() {
 
       <div className="flex items-center justify-end py-1.5 px-6 bg-custom">
 
-
         <div
           className="flex rounded-full justify-between items-center gap-4 h-11 px-4 relative"
           style={{ backgroundColor:"#E1DCFF" }}
         >
 
 
-          <div className="flex justify-center items-center gap-2.5">
+          <div className="flex justify-center items-center gap-2.5 relative">
 
 
-            <div className="flex flex-col justify-center items-end">
+            {/* User Name */}
+            <div className="flex flex-col justify-center items-end leading-tight">
 
-              <span className="text-xs font-semibold text-gray-800">
+              <span className="text-xs font-semibold text-gray-900">
                 {user.firstName || "Guest"} {user.lastName || ""}
               </span>
 
 
-              <span className="text-[10px] text-gray-500">
-                Admin
+              <span className="text-[10px] text-[#A098AE]">
+                ፋብሪካ አስተዳዳሪ (Admin)
               </span>
 
             </div>
 
 
 
+            {/* Profile Icon */}
             <div
-              className="flex justify-center items-center h-8 w-8 rounded-full bg-custom cursor-pointer"
-              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex justify-center items-center h-8 w-8 rounded-full bg-custom cursor-pointer relative"
+              onClick={toggleDropdown}
             >
 
               <FaUser 
@@ -72,19 +84,29 @@ function NavigationBar() {
 
 
 
+            {/* Dropdown */}
             {showDropdown && (
 
-              <div className="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-xl p-4 w-56">
+              <div className="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-xl p-3 w-52 text-xs z-50 border border-gray-100">
 
 
-                <p className="font-semibold text-[#5516DA]">
+                <p className="text-[#5516DA] font-semibold mb-0.5">
                   {user.firstName} {user.lastName}
                 </p>
 
 
-                <p className="text-sm text-gray-500 break-all">
+                <p className="text-[#A098AE] mb-0.5 text-[11px]">
+                  መንሱር ሱልጣን ዱቄት ፋብሪካ
+                </p>
+
+
+                <p className="text-[#5516DA] mb-2 text-[11px] break-all">
                   {user.email}
                 </p>
+
+
+
+                <hr className="my-1.5 border-gray-100" />
 
 
 
@@ -94,17 +116,19 @@ function NavigationBar() {
 
                   className="
                   w-full 
-                  mt-4 
                   bg-[#E1DCFF]
+                  text-[#5516DA]
+                  py-1.5
+                  rounded-md
                   hover:bg-[#5516DA]
                   hover:text-white
-                  py-2
-                  rounded-lg
-                  transition
+                  transition-colors
+                  text-[11px]
+                  font-semibold
                   "
 
                 >
-                  Logout
+                  ወጣ (Logout)
 
                 </button>
 

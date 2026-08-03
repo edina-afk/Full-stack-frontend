@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
+import api from "../../api/axios";
+import Swal from "sweetalert2";
 
 import {
   MdAdd,
@@ -13,6 +14,8 @@ import {
   MdAttachMoney,
   MdAccountBalanceWallet,
 } from "react-icons/md";
+import { MdDelete } from "react-icons/md";
+
 
 
 export default function ManageEvent() {
@@ -141,25 +144,38 @@ export default function ManageEvent() {
 
   // Search
 
-  const filteredCustomers = customers
-    .filter(
-      (customer) =>
-        customer.fullName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase())
+ const filteredCustomers = customers
+  .filter(
+    (customer) =>
+      customer.fullName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase())
 
-        ||
+      ||
 
-        customer.phone
-          ?.includes(searchTerm)
-    )
+      customer.phone
+        ?.includes(searchTerm)
 
-    .sort(
-      (a,b)=>
-        a.fullName.localeCompare(
-          b.fullName
-        )
-    );
+      ||
+
+       customer.ledgers?.some((ledger) =>
+         ledger.receiptNo
+    ?.toLowerCase()
+    .includes(searchTerm.toLowerCase())
+)
+
+      ||
+
+      customer.ledgers?.some((ledger) =>
+        ledger.date
+          ?.toString()
+          .includes(searchTerm)
+      )
+  )
+  .sort(
+    (a, b) =>
+      a.fullName.localeCompare(b.fullName)
+  );
 
 // Navigation handler for View button
   const handleViewCustomer = (customer) => {
@@ -172,20 +188,85 @@ export default function ManageEvent() {
   doc.setFontSize(18);
   doc.text("Customer Report", 14, 20);
 
-  const tableData = filteredCustomers.map((customer) => [
+   const tableData = filteredCustomers.map((customer) => {
+  const latestLedger = customer.ledgers?.[0];
+
+  return [
+    latestLedger?.receiptNo || "-",
     customer.fullName,
     customer.phone,
+    latestLedger?.date
+      ? new Date(latestLedger.date).toLocaleDateString()
+      : "-",
     customer.address || "-",
-  ]);
+      ];
+   });
+
 
   autoTable(doc, {
-    head: [["Customer Name", "Phone", "Address"]],
-    body: tableData,
-    startY: 30,
-  });
+  head: [
+    [
+      "Receipt No",
+      "Customer Name",
+      "Phone",
+      "Date",
+      "Address"
+    ]
+  ],
+  body: tableData,
+  startY: 30,
+});
 
   doc.save("customers-report.pdf");
 };
+
+ 
+const handleDelete = async (id) => {
+
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "This customer will be permanently deleted!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#5516DA",
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel"
+  });
+
+
+  if (!result.isConfirmed) return;
+
+
+  try {
+
+    await api.delete(`/members/${id}`);
+
+    fetchMembers();
+
+
+    Swal.fire({
+      title: "Deleted!",
+      text: "Customer deleted successfully.",
+      icon: "success",
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    Swal.fire({
+      title: "Error!",
+      text: "Failed to delete customer.",
+      icon: "error"
+    });
+
+  }
+};
+
 
    return (
     <CenterLayout>
@@ -357,30 +438,44 @@ export default function ManageEvent() {
               <tbody className="divide-y divide-stone-100">
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer, index) => {
+                      const latestLedger = customer.ledgers?.[0];
                     return (
                       <tr key={customer.id || index} className="hover:bg-purple-50/40 transition-colors">
                         <td className="py-3.5 px-4 font-medium text-stone-900 whitespace-nowrap">
-                          {customer.receiptNumber}
-                        </td>
+                          {latestLedger?.receiptNo || index + 1}
+                         </td>
                         <td className="py-3.5 px-4 font-medium text-stone-800 whitespace-nowrap">
                           {customer.fullName}
                         </td>
                         <td className="py-3.5 px-4 text-stone-600 whitespace-nowrap">
                           {customer.phone}
                         </td>
-                        <td className="py-3.5 px-4 text-stone-500 whitespace-nowrap">
-                          {customer.date}
-                        </td>
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <button
-                            onClick={() => handleViewCustomer(customer)}
-                            style={{ backgroundColor: "#5516DA" }}
-                            className="inline-flex items-center gap-1 hover:opacity-90 text-white font-medium px-3 py-1.5 rounded-md transition-colors text-xs cursor-pointer shadow-xs"
-                          >
-                            <MdVisibility className="text-base" />
-                            <span>View / ዝርዝር</span>
-                          </button>
-                        </td>
+                       <td className="py-3.5 px-4 text-stone-500 whitespace-nowrap">
+                           {latestLedger?.date
+                         ? new Date(latestLedger.date).toLocaleDateString()
+                          : "-"
+  }
+</td>
+                     <td className="py-3.5 px-4 text-center whitespace-nowrap">
+  <div className="flex items-center justify-center gap-2">
+    <button
+      onClick={() => handleViewCustomer(customer)}
+      style={{ backgroundColor: "#5516DA" }}
+      className="inline-flex items-center gap-1 text-white px-3 py-1.5 rounded-md"
+    >
+      <MdVisibility />
+      <span>View</span>
+    </button>
+
+    <button
+      onClick={() => handleDelete(customer.id)}
+      className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md"
+    >
+      <MdDelete />
+      <span>Delete</span>
+    </button>
+  </div>
+</td>
                       </tr>
                     );
                   })
