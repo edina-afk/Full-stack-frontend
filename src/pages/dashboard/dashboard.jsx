@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
-import api from "../../api/axios";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
 
 import {
   MdAdd,
@@ -16,13 +16,13 @@ import {
 
 
 export default function ManageEvent() {
-
   const navigate = useNavigate();
-
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // Options: "all", "balance", "paid"
 
 
+  
   useEffect(() => {
     fetchMembers();
   }, []);
@@ -57,15 +57,18 @@ export default function ManageEvent() {
 
   };
 
-
-
   // Dashboard calculations
 
   const totalCustomersCount = customers.length;
 
+   // Status breakdown counts
+  const countPaid = customers.filter((c) => Number(c.remainingBalance || 0) <= 0).length;
+  const countBalance = customers.filter((c) => Number(c.remainingBalance || 0) > 0).length;
 
 
-  const totalRevenue = customers.reduce(
+
+
+  const  totalPurchases = customers.reduce(
     (sum, customer) => {
 
       const ledgers = Array.isArray(customer.ledgers)
@@ -89,7 +92,7 @@ export default function ManageEvent() {
 
 
 
-  const totalCollected = customers.reduce(
+  const totalPaid = customers.reduce(
     (sum, customer) => {
 
       const ledgers = Array.isArray(customer.ledgers)
@@ -113,7 +116,7 @@ export default function ManageEvent() {
 
 
 
-  const totalPendingBalance = customers.reduce(
+  const  remainingBalance = customers.reduce(
     (sum, customer) => {
 
       const ledgers = Array.isArray(customer.ledgers)
@@ -158,24 +161,12 @@ export default function ManageEvent() {
         )
     );
 
-
-
-
+// Navigation handler for View button
   const handleViewCustomer = (customer) => {
-
-    navigate(
-      "/usermanagement",
-      {
-        state:{
-          customer
-        }
-      }
-    );
-
+    navigate("/usermanagement", { state: { customer } });
   };
 
-
-  const exportPDF = () => {
+   const exportPDF = () => {
   const doc = new jsPDF();
 
   doc.setFontSize(18);
@@ -196,93 +187,93 @@ export default function ManageEvent() {
   doc.save("customers-report.pdf");
 };
 
-  return (
+   return (
     <CenterLayout>
-      {/* Container stretch fixes applied here */}
-      <div className="w-full max-w-full p-4 sm:p-6 bg-gray-50 min-h-screen box-border">
+      <div className="w-full max-w-full p-4 sm:p-6 bg-stone-50 min-h-screen box-border">
         
         {/* Dashboard Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Customer Dashboard / የደንበኞች ዳሽቦርድ
+            <h1 className="text-2xl font-bold text-stone-900">
+              መንሱር ሱልጣን ዱቄት ፋብሪካ / Customer Dashboard
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-stone-600 mt-1">
               Track sales, recent customer registrations, and outstanding balances.
             </p>
           </div>
 
-           <button
+                 <button
     onClick={exportPDF}
     className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition"
   >
     📄 Export PDF
   </button>
-
+          
           <button
             onClick={() => navigate("/newevent")}
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer shrink-0"
+            style={{ backgroundColor: "#5516DA" }}
+            className="flex items-center justify-center gap-2 hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer shrink-0"
           >
             <MdAdd className="text-xl" />
             <span>Add Customer / ደንበኛ ጨምር</span>
           </button>
         </div>
 
-        {/* Dashboard Key Metrics Cards - Expanded grid columns to take full width */}
+        {/* Dashboard Key Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 w-full">
           {/* Card 1: Total Customers */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                 Total Customers
               </p>
-              <h3 className="text-2xl font-extrabold text-gray-800 mt-1">
+              <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
                 {totalCustomersCount}
               </h3>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+            <div className="p-3 bg-purple-50 text-[#5516DA] rounded-lg">
               <MdPeople className="text-2xl" />
             </div>
           </div>
 
-          {/* Card 2: Total Sales Volume */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
+          {/* Card 2: Total Purchases */}
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Total Sales Value
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                Total Purchases
               </p>
-              <h3 className="text-2xl font-extrabold text-gray-800 mt-1">
-                ETB {totalRevenue.toLocaleString()}
+              <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
+                ETB {totalPurchases.toLocaleString()}
               </h3>
             </div>
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+            <div className="p-3 bg-purple-100 text-[#5516DA] rounded-lg">
               <MdAttachMoney className="text-2xl" />
             </div>
           </div>
 
-          {/* Card 3: Total Cash Collected */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
+          {/* Card 3: Total Paid */}
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Total Collected
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                Total Paid
               </p>
-              <h3 className="text-2xl font-extrabold text-green-700 mt-1">
-                ETB {totalCollected.toLocaleString()}
+              <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">
+                ETB {totalPaid.toLocaleString()}
               </h3>
             </div>
-            <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
               <MdAccountBalanceWallet className="text-2xl" />
             </div>
           </div>
 
-          {/* Card 4: Outstanding Credit Balance */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between">
+          {/* Card 4: Remaining Balance */}
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Pending Balance
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                Remaining Balance
               </p>
               <h3 className="text-2xl font-extrabold text-red-600 mt-1">
-                ETB {totalPendingBalance.toLocaleString()}
+                ETB {remainingBalance.toLocaleString()}
               </h3>
             </div>
             <div className="p-3 bg-red-50 text-red-600 rounded-lg">
@@ -291,77 +282,116 @@ export default function ManageEvent() {
           </div>
         </div>
 
-        {/* Search Bar - Full-width search input */}
-        <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-200 mb-6 w-full">
-          <div className="relative w-full">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+        {/* Search Bar & Filter Controls */}
+        <div className="bg-white p-4 rounded-xl shadow-xs border border-stone-200 mb-6 w-full flex flex-col md:flex-row gap-4 items-center justify-between">
+          {/* Search Input */}
+          <div className="relative w-full md:w-1/2">
+            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xl" />
             <input
               type="text"
               placeholder="Search by name, phone, or receipt number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
             />
+          </div>
+
+          {/* Filter Tabs: All, Has Balance, Fully Paid */}
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg w-full md:w-auto shrink-0">
+            <button
+              onClick={() => setStatusFilter("all")}
+              style={statusFilter === "all" ? { backgroundColor: "#5516DA" } : {}}
+              className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                statusFilter === "all"
+                  ? "text-white shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+              }`}
+            >
+              All ({customers.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter("balance")}
+              style={statusFilter === "balance" ? { backgroundColor: "#5516DA" } : {}}
+              className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                statusFilter === "balance"
+                  ? "text-white shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+              }`}
+            >
+              Has Balance / ዕዳ ያለበት ({countBalance})
+            </button>
+            <button
+              onClick={() => setStatusFilter("paid")}
+              style={statusFilter === "paid" ? { backgroundColor: "#5516DA" } : {}}
+              className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                statusFilter === "paid"
+                  ? "text-white shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+              }`}
+            >
+              Fully Paid / የተከፈለ ({countPaid})
+            </button>
           </div>
         </div>
 
         {/* Recent Customers Table */}
-        <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden w-full">
-          <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Recent Transactions</h2>
-            <span className="text-xs font-medium text-gray-500">
+        <div className="bg-white rounded-xl shadow-xs border border-stone-200 overflow-hidden w-full">
+          <div className="p-4 border-b border-stone-200 bg-stone-100 flex items-center justify-between">
+            <h2 className="font-semibold text-stone-800">Recent Transactions</h2>
+            <span className="text-xs font-medium text-stone-500">
               Showing {filteredCustomers.length} entries
             </span>
           </div>
 
           <div className="overflow-x-auto w-full">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
-  <tr>
-    <th className="py-3.5 px-4 whitespace-nowrap">Customer Name</th>
-    <th className="py-3.5 px-4 whitespace-nowrap">Phone Number</th>
-    <th className="py-3.5 px-4 whitespace-nowrap">Address</th>
-    <th className="py-3.5 px-4 text-center whitespace-nowrap">Action</th>
-  </tr>
-</thead>
-              <tbody className="divide-y divide-gray-100">
-  {filteredCustomers.length > 0 ? (
-    filteredCustomers.map((customer, index) => (
-      <tr
-        key={customer.id || index}
-        className="hover:bg-gray-50 transition-colors"
-      >
-        <td className="py-3.5 px-4 font-medium text-gray-800 whitespace-nowrap">
-           {customer.fullName}
-        </td>
-
-        <td className="py-3.5 px-4 text-gray-600 whitespace-nowrap">
-        {customer.phone}
-        </td>
-
-        <td className="py-3.5 px-4 font-semibold text-gray-800 whitespace-nowrap">
-         {customer.address}
-        </td>
-
-        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-          <button
-            onClick={() => handleViewCustomer(customer)}
-            className="inline-flex items-center gap-1 bg-gray-100 hover:bg-blue-50 text-blue-600 font-medium px-3 py-1.5 rounded-md border border-gray-200 transition-colors text-xs cursor-pointer"
-          >
-            <MdVisibility className="text-base" />
-            <span>View / ዝርዝር</span>
-          </button>
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan="4" className="py-8 text-center text-gray-400">
-        No matching records found / ምንም መረጃ አልተገኘም
-      </td>
-    </tr>
-  )}
-</tbody>
+            <table className="w-full text-left text-sm text-stone-600">
+              <thead className="bg-stone-200 text-stone-800 font-semibold border-b border-stone-300">
+                <tr>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Receipt No</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Customer Name</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Phone Number</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Date</th>
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer, index) => {
+                    return (
+                      <tr key={customer.id || index} className="hover:bg-purple-50/40 transition-colors">
+                        <td className="py-3.5 px-4 font-medium text-stone-900 whitespace-nowrap">
+                          {customer.receiptNumber}
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-stone-800 whitespace-nowrap">
+                          {customer.fullName}
+                        </td>
+                        <td className="py-3.5 px-4 text-stone-600 whitespace-nowrap">
+                          {customer.phone}
+                        </td>
+                        <td className="py-3.5 px-4 text-stone-500 whitespace-nowrap">
+                          {customer.date}
+                        </td>
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <button
+                            onClick={() => handleViewCustomer(customer)}
+                            style={{ backgroundColor: "#5516DA" }}
+                            className="inline-flex items-center gap-1 hover:opacity-90 text-white font-medium px-3 py-1.5 rounded-md transition-colors text-xs cursor-pointer shadow-xs"
+                          >
+                            <MdVisibility className="text-base" />
+                            <span>View / ዝርዝር</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-stone-400">
+                      No matching records found / ምንም መረጃ አልተገኘም
+                    </td>
+                  </tr>
+                )}
+              </tbody>
             </table>
           </div>
         </div>

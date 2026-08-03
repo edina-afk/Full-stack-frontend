@@ -1,286 +1,154 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
 import api from "../../api/axios";
+ 
 
 export default function ManageEvent() {
-
   const navigate = useNavigate();
-
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  
+  const customerList = customers.map((customer) => ({
+  ...customer,
+  customerName: customer.fullName,
+  phoneNumber: customer.phone,
+  receiptNumber:
+    customer.ledgers?.[0]?.receiptNo || "-",
+  date:
+    customer.ledgers?.[0]?.date?.split("T")[0] || "-",
+  }));
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
+  
+  // Filter customers by name, phone, or receipt number
+  const filteredCustomers = customerList.filter(
+  (c) =>
+    c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.phoneNumber.includes(searchTerm) ||
+    c.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())
+);
 
+  // Function to navigate to the view route (/usermanagement)
+   const handleViewCustomer = (customer) => {
+  navigate("/usermanagement", {
+    state: { customer },
+  });
+};
 
-  const fetchMembers = async () => {
-    try {
+    useEffect(() => {
+      fetchCustomers();
+   }, []);
 
-      const res = await api.get("/members");
-
-      console.log("MEMBERS RESPONSE:", res.data);
-
-      setCustomers(
-        Array.isArray(res.data)
-          ? res.data
-          : []
-      );
-
-    } catch (err) {
-
-      console.log(
-        err.response?.data || err.message
-      );
-
-      setCustomers([]);
-
+   const fetchCustomers = async () => {
+       try {
+    const res = await api.get("/members");
+    setCustomers(res.data);
+      } catch (err) {
+    console.error(err);
+     } finally {
+    setLoading(false);
     }
   };
 
 
-  const handleViewCustomer = (customer) => {
-
-    navigate("/usermanagement", {
-      state: {
-        customer
-      }
-    });
-
-  };
-
-
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.fullName
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase())
-
-      ||
-
-      c.phone
-        ?.includes(searchTerm)
-  );
-
 
   return (
     <CenterLayout>
-
       <div className="w-full p-6 bg-gray-50 min-h-screen">
-
-
-        {/* Header */}
-
-        <div className="flex justify-between items-center mb-6">
-
+        
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-
-            <h1 className="text-2xl font-bold">
-              Recently Registered Customers
+            <h1 className="text-2xl font-bold text-gray-800">
+              Recently Registered Customers / በቅርብ የተመዘገቡ ደንበኞች
             </h1>
-
-            <p className="text-gray-500">
-              Customer List
+            <p className="text-sm text-gray-500 mt-1">
+              View customer history, payment statuses, and detailed receipts.
             </p>
-
           </div>
-
-
           <button
-
             onClick={() => navigate("/newevent")}
-
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded"
-
+            style={{ backgroundColor: "#5516DA" }}
+            className="flex items-center justify-center gap-2 hover:opacity-90 text-white font-medium px-4 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer"
           >
-
-            <MdAdd />
-
-            Add Customer
-
+            <MdAdd className="text-xl" />
+            <span>Add Customer / ደንበኛ ጨምር</span>
           </button>
-
-
         </div>
 
-
-
-        {/* Search */}
-
-        <div className="mb-5">
-
-          <div className="relative max-w-md">
-
-            <MdSearch className="absolute left-3 top-3 text-gray-400"/>
-
-
+        {/* Controls: Search Bar */}
+        <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-200 mb-6">
+          <div className="relative max-w-md w-full">
+            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
             <input
-
               type="text"
-
-              placeholder="Search..."
-
+              placeholder="Search by name, phone, or receipt number..."
               value={searchTerm}
-
-              onChange={(e)=>setSearchTerm(e.target.value)}
-
-              className="w-full border rounded pl-10 py-2"
-
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
             />
-
-
           </div>
-
         </div>
 
-
-
-        {/* Table */}
-
-
-        <div className="bg-white rounded shadow overflow-x-auto">
-
-
-          <table className="w-full">
-
-
-            <thead className="bg-gray-100">
-
-              <tr>
-
-                <th className="p-3 text-left">
-                  Customer Name
-                </th>
-
-
-                <th className="p-3 text-left">
-                  Phone
-                </th>
-
-
-                <th className="p-3 text-left">
-                  Address
-                </th>
-
-
-                <th className="p-3 text-center">
-                  Action
-                </th>
-
-
-              </tr>
-
-
-            </thead>
-
-
-
-            <tbody>
-
-
-            {
-              filteredCustomers.length > 0 ? (
-
-                filteredCustomers.map((customer)=>(
-
-
-                  <tr
-                    key={customer.id}
-                    className="border-t"
-                  >
-
-
-                    <td className="p-3">
-
-                      {customer.fullName}
-
-                    </td>
-
-
-
-                    <td className="p-3">
-
-                      {customer.phone}
-
-                    </td>
-
-
-
-                    <td className="p-3">
-
-                      {customer.address || "-"}
-
-                    </td>
-
-
-
-                    <td className="p-3 text-center">
-
-
-                      <button
-
-                        onClick={() =>
-                          handleViewCustomer(customer)
-                        }
-
-                        className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded"
-
-                      >
-
-                        <MdVisibility />
-
-                        View
-
-
-                      </button>
-
-
-                    </td>
-
-
-                  </tr>
-
-
-                ))
-
-
-              ) : (
-
-
+        {/* Customer Data Table */}
+        <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
                 <tr>
-
-                  <td
-                    colSpan="4"
-                    className="text-center p-5"
-                  >
-
-                    No customers found.
-
-                  </td>
-
+                  <th className="py-3.5 px-4">Receipt No</th>
+                  <th className="py-3.5 px-4">Customer Name</th>
+                  <th className="py-3.5 px-4">Phone Number</th>
+                  <th className="py-3.5 px-4">Date</th>
+                  <th className="py-3.5 px-4 text-center">Action</th>
                 </tr>
-
-
-              )
-
-            }
-
-
-            </tbody>
-
-
-          </table>
-
-
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => {
+                    return (
+                      <tr key={customer.id} className="hover:bg-purple-50/40 transition-colors">
+                        <td className="py-3.5 px-4 font-medium text-gray-900">
+                          {customer.receiptNumber}
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-gray-800">
+                          {customer.customerName}
+                        </td>
+                        <td className="py-3.5 px-4 text-gray-600">
+                          {customer.phoneNumber}
+                        </td>
+                        <td className="py-3.5 px-4 text-gray-500">
+                          {customer.date}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <button
+                            onClick={() => handleViewCustomer(customer)}
+                            style={{ backgroundColor: "#5516DA" }}
+                            className="inline-flex items-center gap-1 hover:opacity-90 text-white font-medium px-3 py-1.5 rounded-md transition-colors text-xs cursor-pointer shadow-xs"
+                          >
+                            <MdVisibility className="text-base" />
+                            <span>View / ዝርዝር</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-gray-400">
+                      No matching records found / ምንም መረጃ አልተገኘም
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-
 
       </div>
-
-
     </CenterLayout>
   );
 }
