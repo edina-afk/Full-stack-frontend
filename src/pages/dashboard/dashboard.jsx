@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import api from "../../api/axios";
 import Swal from "sweetalert2";
 
@@ -22,7 +20,9 @@ export default function ManageEvent() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // Options: "all", "balance", "paid"
+  const [statusFilter, setStatusFilter] = useState("all"); // Options: "all", "balance", "paid";
+  const [currentPage, setCurrentPage] = useState(1);
+ const customersPerPage = 10;
 
 
   
@@ -177,49 +177,25 @@ export default function ManageEvent() {
       a.fullName.localeCompare(b.fullName)
   );
 
+
+  const indexOfLastCustomer = currentPage * customersPerPage;
+  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
+
+   const currentCustomers = filteredCustomers.slice(
+  indexOfFirstCustomer,
+  indexOfLastCustomer
+  );
+
+  const totalPages = Math.ceil(
+  filteredCustomers.length / customersPerPage
+  );
+  
 // Navigation handler for View button
   const handleViewCustomer = (customer) => {
     navigate("/usermanagement", { state: { customer } });
   };
 
-   const exportPDF = () => {
-  const doc = new jsPDF();
-
-  doc.setFontSize(18);
-  doc.text("Customer Report", 14, 20);
-
-   const tableData = filteredCustomers.map((customer) => {
-  const latestLedger = customer.ledgers?.[0];
-
-  return [
-    latestLedger?.receiptNo || "-",
-    customer.fullName,
-    customer.phone,
-    latestLedger?.date
-      ? new Date(latestLedger.date).toLocaleDateString()
-      : "-",
-    customer.address || "-",
-      ];
-   });
-
-
-  autoTable(doc, {
-  head: [
-    [
-      "Receipt No",
-      "Customer Name",
-      "Phone",
-      "Date",
-      "Address"
-    ]
-  ],
-  body: tableData,
-  startY: 30,
-});
-
-  doc.save("customers-report.pdf");
-};
-
+   
  
 const handleDelete = async (id) => {
 
@@ -266,11 +242,45 @@ const handleDelete = async (id) => {
 
   }
 };
-
+    const exportPDF = () => {
+  window.print();
+};
 
    return (
     <CenterLayout>
-      <div className="w-full max-w-full p-4 sm:p-6 bg-stone-50 min-h-screen box-border">
+     <style>{`
+@media print {
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-dashboard,
+  #printable-dashboard * {
+    visibility: visible;
+  }
+
+  #printable-dashboard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 10px;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+}
+`}</style>
+    <div id="printable-dashboard">
+  <div className="w-full max-w-full p-4 sm:p-6 bg-stone-50 box-border">
         
         {/* Dashboard Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
@@ -437,7 +447,7 @@ const handleDelete = async (id) => {
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((customer, index) => {
+                  currentCustomers.map((customer, index) => {
                       const latestLedger = customer.ledgers?.[0];
                     return (
                       <tr key={customer.id || index} className="hover:bg-purple-50/40 transition-colors">
@@ -488,9 +498,85 @@ const handleDelete = async (id) => {
                 )}
               </tbody>
             </table>
+            <div className="flex justify-between items-center px-4 py-3 border-t border-stone-200">
+
+  {/* Showing text */}
+  <p className="text-xs text-stone-500">
+    Showing {indexOfFirstCustomer + 1} -{" "}
+    {Math.min(indexOfLastCustomer, filteredCustomers.length)} of{" "}
+    {filteredCustomers.length} customers
+  </p>
+
+
+  {/* Pagination */}
+  <div className="flex items-center gap-1">
+
+    <button
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage(currentPage - 1)}
+      className="
+        px-2.5 
+        py-1 
+        text-xs 
+        rounded-md
+        border
+        border-stone-300
+        text-stone-600
+        hover:bg-stone-100
+        disabled:opacity-40
+      "
+    >
+      Prev
+    </button>
+
+
+    {Array.from({ length: totalPages }, (_, index) => (
+      <button
+        key={index}
+        onClick={() => setCurrentPage(index + 1)}
+        className={`
+          px-2.5 
+          py-1 
+          text-xs 
+          rounded-md
+          transition
+          ${
+            currentPage === index + 1
+              ? "bg-[#5516DA] text-white"
+              : "border border-stone-300 text-stone-600 hover:bg-stone-100"
+          }
+        `}
+      >
+        {index + 1}
+      </button>
+    ))}
+
+
+    <button
+      disabled={currentPage === totalPages}
+      onClick={() => setCurrentPage(currentPage + 1)}
+      className="
+        px-2.5 
+        py-1 
+        text-xs
+        rounded-md
+        border
+        border-stone-300
+        text-stone-600
+        hover:bg-stone-100
+        disabled:opacity-40
+      "
+    >
+      Next
+    </button>
+
+  </div>
+
+</div>
           </div>
         </div>
 
+</div>
       </div>
     </CenterLayout>
   );
