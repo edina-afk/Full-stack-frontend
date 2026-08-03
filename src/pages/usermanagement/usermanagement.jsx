@@ -378,18 +378,18 @@ const activeCustomer = useMemo(() => {
 
                       {/* Items Table */}
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
+                        <table className="w-full text-left text-sm border-collapse">
                           <thead className="bg-white text-gray-400 border-b border-gray-100 font-bold uppercase">
                             <tr>
-                              <th className="p-2.5">Receipt</th>
-                              <th className="p-2.5">Item</th>
-                              <th className="p-2.5 text-right">Qty</th>
-                              <th className="p-2.5 text-right">Price</th>
-                              <th className="p-2.5 text-right">Total</th>
-                              <th className="p-2.5 text-right">Paid</th>
-                              <th className="p-2.5 text-right">Balance</th>
-                              <th className="p-2.5">Bank Ref</th>
-                              <th className="p-2.5 text-center no-print">Actions</th>
+                              <th className="p-3 text-sm font-bold">Receipt</th>
+                              <th className="p-3 text-sm font-bold">Item</th>
+                              <th className="p-3 text-sm font-bold text-right">Qty</th>
+                              <th className="p-3 text-sm font-bold text-right">Price</th>
+                              <th className="p-3 text-sm font-bold text-right">Total</th>
+                              <th className="p-3 text-sm font-bold text-right">Paid</th>
+                              <th className="p-3 text-sm font-bold text-right">Balance</th>
+                              <th className="p-3 text-sm font-bold">Bank Ref</th>
+                              <th className="p-3 text-sm font-bold text-center no-print">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -404,7 +404,7 @@ const activeCustomer = useMemo(() => {
                                 <td className={`p-2.5 text-right font-bold ${item.remainingBalance > 0 ? "text-red-600" : "text-gray-400"}`}>
                                   {Number(item.remainingBalance).toFixed(2)}
                                 </td>
-                                <td className="p-2.5 text-gray-400 text-[11px]">{item.bankPaymentEntry || "-"}</td>
+                                <td className="p-3 text-gray-700 text-base">{item.bankPaymentEntry || "-"}</td>
                                 <td className="p-2.5 text-center no-print">
                                   <div className="flex items-center justify-center gap-1.5">
                                     {item.remainingBalance > 0 && (
@@ -461,20 +461,23 @@ const activeCustomer = useMemo(() => {
                 </button>
               </div>
 
-              <form onSubmit={handleFormSubmit} className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+               <form 
+                  onSubmit={handleFormSubmit} 
+                  className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm"
+>
                 <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Date (ቀን) *</label>
+                  <label className="block mb-2 font-semibold text-gray-700 text-sm">Date (ቀን) *</label>
                   <input
                     type="date"
                     name="date"
                     value={formData.date}
                     onChange={handleFormChange}
                     required
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                   className="w-full p-3 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Receipt No *</label>
+                   <label className="block mb-2 font-semibold text-gray-700 text-sm">Receipt No *</label>
                   <input
                     type="text"
                     name="receiptNumber"
@@ -482,11 +485,11 @@ const activeCustomer = useMemo(() => {
                     onChange={handleFormChange}
                     required
                     placeholder="REC-..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                    className="w-full p-3 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block mb-1 font-semibold text-gray-600">Item Type (የዱቄት አይነት) *</label>
+                   <label className="block mb-2 font-semibold text-gray-700 text-sm">Item Type (የዱቄት አይነት) *</label>
                   <input
                     type="text"
                     name="itemType"
@@ -494,11 +497,11 @@ const activeCustomer = useMemo(() => {
                     onChange={handleFormChange}
                     required
                     placeholder="e.g. የስንዴ ዱቄት 50ኪ.ግ / ፉስካ..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                     className="w-full p-3 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Quantity *</label>
+                  <label className="block mb-2 font-semibold text-gray-700 text-sm">Quantity *</label>
                   <input
                     type="number"
                     name="quantity"
@@ -507,11 +510,11 @@ const activeCustomer = useMemo(() => {
                     onChange={handleFormChange}
                     required
                     placeholder="1"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                      className="w-full p-3 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Unit Price (ETB) *</label>
+                   <label className="block mb-2 font-semibold text-gray-700 text-sm">Unit Price (ETB) *</label>
                   <input
                     type="number"
                     name="unitPrice"
@@ -521,11 +524,11 @@ const activeCustomer = useMemo(() => {
                     onChange={handleFormChange}
                     required
                     placeholder="0.00"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                   className="w-full p-3 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Paid Amount (ETB) *</label>
+                   <label className="block mb-2 font-semibold text-gray-700 text-sm">Paid Amount (ETB) *</label>
                   <input
                     type="number"
                     name="paidAmount"
@@ -535,18 +538,18 @@ const activeCustomer = useMemo(() => {
                     onChange={handleFormChange}
                     required
                     placeholder="0.00"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                   className="w-full p-3 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Bank Ref / Transaction No</label>
+                   <label className="block mb-2 font-semibold text-gray-700 text-sm">Bank Ref / Transaction No</label>
                   <input
                     type="text"
                     name="bankPaymentEntry"
                     value={formData.bankPaymentEntry}
                     onChange={handleFormChange}
                     placeholder="CBE-..., TELEBIRR-..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                        className="w-full h-12 px-4 text-base border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#5516DA]"
                   />
                 </div>
 

@@ -145,11 +145,35 @@ export default function ManageEvent() {
   // Search
 
  const filteredCustomers = customers
-  .filter(
-    (customer) =>
+  .filter((customer) => {
+
+    // Calculate customer remaining balance
+    const balance = (customer.ledgers || []).reduce(
+      (sum, ledger) =>
+        sum + Number(ledger.remaining || 0),
+      0
+    );
+
+
+    // Status filter
+    if (statusFilter === "balance" && balance <= 0) {
+      return false;
+    }
+
+
+    if (statusFilter === "paid" && balance > 0) {
+      return false;
+    }
+
+
+    // Search filter
+    const search = searchTerm.toLowerCase();
+
+
+    return (
       customer.fullName
         ?.toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(search)
 
       ||
 
@@ -158,11 +182,11 @@ export default function ManageEvent() {
 
       ||
 
-       customer.ledgers?.some((ledger) =>
-         ledger.receiptNo
-    ?.toLowerCase()
-    .includes(searchTerm.toLowerCase())
-)
+      customer.ledgers?.some((ledger) =>
+        ledger.receiptNo
+          ?.toLowerCase()
+          .includes(search)
+      )
 
       ||
 
@@ -171,9 +195,11 @@ export default function ManageEvent() {
           ?.toString()
           .includes(searchTerm)
       )
-  )
+    );
+
+  })
   .sort(
-    (a, b) =>
+    (a,b)=>
       a.fullName.localeCompare(b.fullName)
   );
 
