@@ -4,8 +4,7 @@ import i18n from "../i18n";
 
 function NavigationBar() {
 
-  const [showDropdown, setShowDropdown] = useState(false);
- const savedLanguage = localStorage.getItem("language") || "am";
+  const savedLanguage = localStorage.getItem("language") || "am";
 
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -18,26 +17,32 @@ function NavigationBar() {
     setLanguage(lang);
     localStorage.setItem("language", lang);
     i18n.changeLanguage(lang);
+  };
+
+
   const [user] = useState(() => {
+
     const storedUser = localStorage.getItem("user");
 
     try {
       return storedUser && storedUser !== "undefined"
         ? JSON.parse(storedUser)
         : {};
+
     } catch (error) {
+
       console.log("Invalid user data");
       localStorage.removeItem("user");
+
       return {};
     }
-  });
 
+  });
 
 
   const toggleDropdown = () => {
     setShowDropdown((prev) => !prev);
   };
-
 
 
   const handleLogout = () => {
@@ -48,7 +53,6 @@ function NavigationBar() {
     window.location.href = "/signin";
 
   };
-
 
 
   return (
