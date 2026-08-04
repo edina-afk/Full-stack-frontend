@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
-// import axios from "axios"; // Unlock when connecting to your API
+import api from "../../api/axios";
 
 export default function CustomerDetail() {
   const navigate = useNavigate();
@@ -48,154 +48,53 @@ export default function CustomerDetail() {
     fetchCustomers();
   }, []);
 
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      // BACKEND INTEGRATION POINT: Replace mock with actual API call
-      // const response = await axios.get("/api/customers");
-      // const data = response.data;
+   const fetchCustomers = async () => {
+  try {
+    setLoading(true);
 
-      const data = [
-        {
-          id: "1",
-          customerName: "Abebe Kebede (አበበ ከበደ)",
-          phoneNumber: "0911223344",
-          purchases: [
-            {
-              id: "p101",
-              date: "2026-03-01",
-              receiptNumber: "REC-1001",
-              bankPaymentEntry: "CBE-987123",
-              itemType: "Wheat Flour 50kg (የስንዴ ዱቄት 50ኪ.ግ)",
-              quantity: 10,
-              unitPrice: 3800,
-              totalPrice: 38000,
-              paidAmount: 25000,
-              remainingBalance: 13000,
-              paymentHistory: [
-                {
-                  id: "pay_1",
-                  date: "2026-03-01",
-                  amount: 25000,
-                  bankPaymentEntry: "CBE-987123",
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: "2",
-          customerName: "Tigist Alemu (ትግስት አለሙ)",
-          phoneNumber: "0922887766",
-          purchases: [
-            {
-              id: "p102",
-              date: "2026-03-10",
-              receiptNumber: "REC-1002",
-              bankPaymentEntry: "BOA-456789",
-              itemType: "Superfine Flour 25kg (ሱፐር ፋይን ዱቄት 25ኪ.ግ)",
-              quantity: 20,
-              unitPrice: 2100,
-              totalPrice: 42000,
-              paidAmount: 30000,
-              remainingBalance: 12000,
-              paymentHistory: [
-                {
-                  id: "pay_2",
-                  date: "2026-03-10",
-                  amount: 30000,
-                  bankPaymentEntry: "BOA-456789",
-                },
-              ],
-            },
-            {
-              id: "p103",
-              date: "2026-03-15",
-              receiptNumber: "REC-1003",
-              bankPaymentEntry: "CBE-112233",
-              itemType: "Wheat Bran / Fruska (ፉስካ / መኖ 50ኪ.ግ)",
-              quantity: 15,
-              unitPrice: 1200,
-              totalPrice: 18000,
-              paidAmount: 18000,
-              remainingBalance: 0,
-              paymentHistory: [
-                {
-                  id: "pay_3",
-                  date: "2026-03-15",
-                  amount: 18000,
-                  bankPaymentEntry: "CBE-112233",
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: "3",
-          customerName: "Mulugeta Tadesse (ሙሉጌታ ታደሰ)",
-          phoneNumber: "0933112233",
-          purchases: [
-            {
-              id: "p104",
-              date: "2026-02-20",
-              receiptNumber: "REC-0988",
-              bankPaymentEntry: "TELEBIRR-8899",
-              itemType: "First Grade Wheat Flour (አንደኛ ደረጃ ዱቄት 50ኪ.ግ)",
-              quantity: 30,
-              unitPrice: 4000,
-              totalPrice: 120000,
-              paidAmount: 120000,
-              remainingBalance: 0,
-              paymentHistory: [
-                {
-                  id: "pay_4",
-                  date: "2026-02-20",
-                  amount: 120000,
-                  bankPaymentEntry: "TELEBIRR-8899",
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: "4",
-          customerName: "Bethlehem Haile (ቤተልሔም ኃይሌ)",
-          phoneNumber: "0944556677",
-          purchases: [
-            {
-              id: "p106",
-              date: "2026-03-18",
-              receiptNumber: "REC-1005",
-              bankPaymentEntry: "CBE-778899",
-              itemType: "Standard Bakery Flour (የዳቦ ዱቄት 50ኪ.ግ)",
-              quantity: 12,
-              unitPrice: 3600,
-              totalPrice: 43200,
-              paidAmount: 25000,
-              remainingBalance: 18200,
-              paymentHistory: [
-                {
-                  id: "pay_5",
-                  date: "2026-03-18",
-                  amount: 25000,
-                  bankPaymentEntry: "CBE-778899",
-                },
-              ],
-            },
-          ],
-        },
-      ];
+    const response = await api.get(`/members/${id}`);
 
-      setCustomers(data);
-      if (data.length > 0 && !selectedCustomerId) {
-        setSelectedCustomerId(id || data[0].id);
-      }
-    } catch (err) {
-      setError("Failed to load customer list.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const member = response.data;
+
+    const formattedCustomer = {
+      id: member.id,
+      customerName: member.fullName,
+      phoneNumber: member.phone,
+
+      purchases: member.ledgers.map((ledger) => ({
+        id: ledger.id,
+        date: ledger.date,
+        receiptNumber: ledger.receiptNo,
+        bankPaymentEntry: ledger.bankPaymentEntry || "",
+
+        itemType: ledger.itemType,
+        quantity: Number(ledger.quantity),
+        unitPrice: Number(ledger.unitPrice),
+        totalPrice: Number(ledger.totalPrice),
+
+        paidAmount: Number(ledger.paidAmount),
+        remainingBalance: Number(ledger.remaining),
+        paymentHistory: ledger.payments || []
+      }))
+    };
+
+
+    setCustomers([formattedCustomer]);
+
+    setSelectedCustomerId(member.id);
+
+
+  } catch (err) {
+
+    console.log(err);
+    setError("Failed to load customer");
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
 
   // Dynamic calculations per customer
   const enrichedCustomers = useMemo(() => {
@@ -282,196 +181,169 @@ export default function CustomerDetail() {
   };
 
   // 2. CREATE OR UPDATE PURCHASE ENTRY IN BACKEND & LOCAL STATE
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (!activeCustomer) return;
+   const handleFormSubmit = async (e) => {
+  e.preventDefault();
 
-    const qty = parseFloat(formData.quantity) || 0;
-    const price = parseFloat(formData.unitPrice) || 0;
-    const paid = parseFloat(formData.paidAmount) || 0;
-    const totalPrice = qty * price;
-    const remainingBalance = Math.max(0, totalPrice - paid);
+  if (!activeCustomer) return;
 
-    const initialPayment = paid > 0 ? [{
-      id: `pay_${Date.now()}`,
-      date: formData.date,
-      amount: paid,
-      bankPaymentEntry: formData.bankPaymentEntry || ""
-    }] : [];
 
-    try {
-      if (editingPurchaseId) {
-        setCustomers((prevCustomers) =>
-          prevCustomers.map((cust) => {
-            if (String(cust.id) === String(activeCustomer.id)) {
-              return {
-                ...cust,
-                purchases: cust.purchases.map((p) => {
-                  if (p.id === editingPurchaseId) {
-                    const currentHistory = p.paymentHistory || [];
-                    return {
-                      ...p,
-                      ...formData,
-                      quantity: qty,
-                      unitPrice: price,
-                      totalPrice,
-                      paidAmount: paid,
-                      remainingBalance,
-                      paymentHistory: currentHistory.length > 0 ? currentHistory : initialPayment,
-                    };
-                  }
-                  return p;
-                }),
-              };
-            }
-            return cust;
-          })
-        );
-      } else {
-        const newPurchase = {
-          ...formData,
-          customerId: activeCustomer.id,
-          quantity: qty,
-          unitPrice: price,
-          totalPrice,
-          paidAmount: paid,
-          remainingBalance,
-          id: `p${Date.now()}`,
-          paymentHistory: initialPayment,
-        };
-        setCustomers((prevCustomers) =>
-          prevCustomers.map((cust) => {
-            if (String(cust.id) === String(activeCustomer.id)) {
-              return {
-                ...cust,
-                purchases: [newPurchase, ...(cust.purchases || [])],
-              };
-            }
-            return cust;
-          })
-        );
-      }
+  const qty = Number(formData.quantity);
+  const price = Number(formData.unitPrice);
+  const paid = Number(formData.paidAmount);
 
-      setIsModalOpen(false);
-    } catch (err) {
-      alert("Failed to save transaction.");
+  const totalPrice = qty * price;
+  const remaining = totalPrice - paid;
+
+
+  try {
+
+    if(editingPurchaseId){
+
+      await api.patch(`/ledger/${editingPurchaseId}`, {
+
+        receiptNo: formData.receiptNumber,
+        date: formData.date,
+        itemType: formData.itemType,
+        quantity: qty,
+        unitPrice: price,
+        totalPrice,
+        paidAmount: paid,
+        remaining,
+        bankPaymentEntry: formData.bankPaymentEntry
+
+      });
+
+
+    }else{
+
+
+      await api.post("/ledger",{
+
+        memberId: activeCustomer.id,
+
+        receiptNo: formData.receiptNumber,
+
+        date: formData.date,
+
+        itemType: formData.itemType,
+
+        quantity: qty,
+
+        unitPrice: price,
+
+        totalPrice,
+
+        paidAmount: paid,
+
+        remaining,
+
+        bankPaymentEntry: formData.bankPaymentEntry
+
+      });
+
     }
-  };
+
+
+    await fetchCustomers();
+
+    setIsModalOpen(false);
+
+
+  } catch(err){
+
+    console.log(err);
+
+    alert("Failed to save transaction");
+
+  }
+
+};
 
   // ADD INDIVIDUAL PAYMENT ENTRY (DATE-BASED PAYMENT RECORD)
-  const handleAddPaymentSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedPurchaseForPayment) return;
+   const handleAddPaymentSubmit = async (e) => {
+  e.preventDefault();
 
-    const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
-    if (newPaymentAmount <= 0) {
-      alert("Please enter a valid payment amount.");
-      return;
-    }
+  if (!selectedPurchaseForPayment) return;
 
-    try {
-      setCustomers((prevCustomers) =>
-        prevCustomers.map((cust) => {
-          if (String(cust.id) === String(activeCustomer.id)) {
-            return {
-              ...cust,
-              purchases: cust.purchases.map((p) => {
-                if (p.id === selectedPurchaseForPayment.id) {
-                  const existingHistory = p.paymentHistory || [];
-                  const newHistoryEntry = {
-                    id: `pay_${Date.now()}`,
-                    date: paymentFormData.date,
-                    amount: newPaymentAmount,
-                    bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
-                  };
-                  const updatedHistory = [...existingHistory, newHistoryEntry];
-                  
-                  const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
-                  const updatedRemainingBalance = Math.max(0, p.totalPrice - updatedPaidAmount);
 
-                  return {
-                    ...p,
-                    paidAmount: updatedPaidAmount,
-                    remainingBalance: updatedRemainingBalance,
-                    bankPaymentEntry: paymentFormData.bankPaymentEntry || p.bankPaymentEntry,
-                    paymentHistory: updatedHistory,
-                  };
-                }
-                return p;
-              }),
-            };
-          }
-          return cust;
-        })
-      );
+  const amount = Number(paymentFormData.amount);
 
-      setIsPaymentModalOpen(false);
-    } catch (err) {
-      alert("Failed to record payment.");
-    }
-  };
 
+  try {
+
+    await api.post("/payment", {
+      ledgerId: selectedPurchaseForPayment.id,
+      date: paymentFormData.date,
+      amount: amount,
+      bankPaymentEntry: paymentFormData.bankPaymentEntry
+    });
+
+
+    await fetchCustomers();
+
+
+    setIsPaymentModalOpen(false);
+
+
+  } catch(err){
+
+    console.log(err);
+
+    alert("Failed to save payment");
+
+  }
+
+};
   // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
   const handleSettleBalance = async (purchase) => {
-    try {
-      const remaining = purchase.remainingBalance;
-      if (remaining <= 0) return;
+  try {
 
-      const newHistoryEntry = {
-        id: `pay_${Date.now()}`,
-        date: new Date().toISOString().split("T")[0],
-        amount: remaining,
-        bankPaymentEntry: "Full Settlement",
-      };
+    const remaining = purchase.remainingBalance;
 
-      setCustomers((prevCustomers) =>
-        prevCustomers.map((cust) => {
-          if (String(cust.id) === String(activeCustomer.id)) {
-            return {
-              ...cust,
-              purchases: cust.purchases.map((p) => {
-                if (p.id === purchase.id) {
-                  const existingHistory = p.paymentHistory || [];
-                  return {
-                    ...p,
-                    paidAmount: p.totalPrice,
-                    remainingBalance: 0,
-                    paymentHistory: [...existingHistory, newHistoryEntry],
-                  };
-                }
-                return p;
-              }),
-            };
-          }
-          return cust;
-        })
-      );
-    } catch (err) {
-      alert("Failed to settle balance.");
-    }
-  };
+    if (remaining <= 0) return;
+
+
+    await api.post("/payment", {
+      ledgerId: purchase.id,
+      date: new Date().toISOString().split("T")[0],
+      amount: remaining,
+      bankPaymentEntry: "Full Settlement"
+    });
+
+
+    await fetchCustomers();
+
+
+  } catch(err){
+
+    console.log(err);
+
+    alert("Failed to settle balance.");
+
+  }
+};
 
   // 4. DELETE TRANSACTION FROM BACKEND & LOCAL STATE
   const handleDeletePurchase = async (purchaseId) => {
-    if (window.confirm("Are you sure you want to delete this transaction record?")) {
-      try {
-        setCustomers((prevCustomers) =>
-          prevCustomers.map((cust) => {
-            if (String(cust.id) === String(activeCustomer.id)) {
-              return {
-                ...cust,
-                purchases: cust.purchases.filter((p) => p.id !== purchaseId),
-              };
-            }
-            return cust;
-          })
-        );
-      } catch (err) {
-        alert("Failed to delete transaction record.");
-      }
-    }
-  };
 
+  if(window.confirm("Are you sure you want to delete this transaction record?")){
+
+    try {
+
+      await api.delete(`/ledger/${purchaseId}`);
+
+      await fetchCustomers();
+
+    } catch(err){
+
+      console.log(err);
+      alert("Failed to delete transaction record.");
+
+    }
+
+  }
+
+};
   if (loading) {
     return (
       <CenterLayout>
