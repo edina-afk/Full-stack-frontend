@@ -220,49 +220,31 @@ export default function CustomerDetail() {
 
   // Submit payment history installment record
   const handleAddPaymentSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedPurchaseForPayment) return;
+  e.preventDefault();
+  if (!selectedPurchaseForPayment) return;
 
-    const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
-    if (newPaymentAmount <= 0) {
-      alert("Please enter a valid payment amount.");
-      return;
-    }
+  const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
+  if (newPaymentAmount <= 0) {
+    alert("Please enter a valid payment amount.");
+    return;
+  }
 
-    try {
-      const updatedPaidAmount =
-        Number(selectedPurchaseForPayment.paidAmount) + newPaymentAmount;
+  try {
+    // Calls POST /payments matching the NestJS @Controller('payments') @Post()
+    await api.post("/payments", {
+      ledgerId: selectedPurchaseForPayment.id,
+      amount: newPaymentAmount,
+      date: paymentFormData.date,
+      note: paymentFormData.bankPaymentEntry || "",
+    });
 
-      await api.post(`/ledger/${selectedPurchaseForPayment.id}/payments`, {
-        date: paymentFormData.date,
-        amount: newPaymentAmount,
-        bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
-        paidAmount: updatedPaidAmount,
-      });
-
-      await fetchCustomer();
-      setIsPaymentModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      // Fallback: update main ledger paid amount directly if separate payment endpoint does not exist
-      try {
-        const updatedPaidAmount =
-          Number(selectedPurchaseForPayment.paidAmount) + newPaymentAmount;
-
-        await api.patch(`/ledger/${selectedPurchaseForPayment.id}`, {
-          paidAmount: updatedPaidAmount,
-          note: paymentFormData.bankPaymentEntry || selectedPurchaseForPayment.bankPaymentEntry,
-        });
-
-        await fetchCustomer();
-        setIsPaymentModalOpen(false);
-      } catch (fallbackErr) {
-        console.error(fallbackErr);
-        alert("Failed to record payment.");
-      }
-    }
-  };
-
+    await fetchCustomer();
+    setIsPaymentModalOpen(false);
+  } catch (err) {
+    console.error("Failed to record payment:", err);
+    alert(err.response?.data?.message || "Failed to record payment.");
+  }
+};
   // Pay remaining balance in full
   const handleSettleBalance = async (purchase) => {
     if (purchase.remainingBalance <= 0) return;
