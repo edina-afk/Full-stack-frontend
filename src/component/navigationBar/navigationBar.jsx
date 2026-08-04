@@ -1,11 +1,23 @@
 import React, { useState } from "react";
 import { FaUser } from "react-icons/fa";
+import i18n from "../i18n";
 
 function NavigationBar() {
 
   const [showDropdown, setShowDropdown] = useState(false);
+ const savedLanguage = localStorage.getItem("language") || "am";
+
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const [language, setLanguage] = useState(savedLanguage);
+
+  i18n.changeLanguage(savedLanguage);
 
 
+  const changeLanguage = (lang) => {
+    setLanguage(lang);
+    localStorage.setItem("language", lang);
+    i18n.changeLanguage(lang);
   const [user] = useState(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -67,7 +79,33 @@ function NavigationBar() {
 
             </div>
 
+         {/* Language Switch */}
+<div className="flex items-center gap-1 bg-white rounded-full px-2 py-1 text-[11px] font-semibold">
 
+  <button
+    onClick={() => changeLanguage("am")}
+    className={`px-2 py-1 rounded-full ${
+      language === "am"
+        ? "bg-[#5516DA] text-white"
+        : "text-gray-500"
+    }`}
+  >
+    አማ
+  </button>
+
+
+  <button
+    onClick={() => changeLanguage("en")}
+    className={`px-2 py-1 rounded-full ${
+      language === "en"
+        ? "bg-[#5516DA] text-white"
+        : "text-gray-500"
+    }`}
+  >
+    EN
+  </button>
+
+</div>
 
             {/* Profile Icon */}
             <div
