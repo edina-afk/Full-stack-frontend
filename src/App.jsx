@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
-
 import Dashboard from "./pages/dashboard/dashboard";
 import Newevent from "./pages/newevent/newevent";
 import Manageevent from "./pages/manageevent/manageevent";
