@@ -1,799 +1,153 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
+import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
 import api from "../../api/axios";
+ 
 
-export default function CustomerDetail() {
+export default function ManageEvent() {
   const navigate = useNavigate();
-  const { id } = useParams();
-
-  // State setup
   const [customers, setCustomers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const [selectedCustomerId, setSelectedCustomerId] = useState(id || null);
+  
+  const customerList = customers.map((customer) => ({
+  ...customer,
+  customerName: customer.fullName,
+  phoneNumber: customer.phone,
+  receiptNumber:
+    customer.ledgers?.[0]?.receiptNo || "-",
+  date:
+    customer.ledgers?.[0]?.date?.split("T")[0] || "-",
+  }));
 
-  // Modal State for adding/editing purchase
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPurchaseId, setEditingPurchaseId] = useState(null);
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
-    receiptNumber: "",
-    bankPaymentEntry: "",
-    itemType: "",
-    quantity: "",
-    unitPrice: "",
-    paidAmount: "",
+  
+  // Filter customers by name, phone, or receipt number
+  const filteredCustomers = customerList.filter(
+  (c) =>
+    c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.phoneNumber.includes(searchTerm) ||
+    c.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+  // Function to navigate to the view route (/usermanagement)
+   const handleViewCustomer = (customer) => {
+  navigate("/usermanagement", {
+    state: { customer },
   });
+};
 
-  // Modal State for adding individual payments (Payment Calendar/History)
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState(null);
-  const [paymentFormData, setPaymentFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
-    amount: "",
-    bankPaymentEntry: "",
-  });
-
-  // Keep selectedCustomerId in sync if route param changes
-  useEffect(() => {
-    if (id) {
-      setSelectedCustomerId(id);
-    }
-  }, [id]);
-
-  // 1. FETCH CUSTOMERS FROM BACKEND ON MOUNT
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
+    useEffect(() => {
+      fetchCustomers();
+   }, []);
 
    const fetchCustomers = async () => {
-  try {
-    setLoading(true);
-
-    const response = await api.get(`/members/${id}`);
-
-    const member = response.data;
-
-    const formattedCustomer = {
-      id: member.id,
-      customerName: member.fullName,
-      phoneNumber: member.phone,
-
-      purchases: member.ledgers.map((ledger) => ({
-        id: ledger.id,
-        date: ledger.date,
-        receiptNumber: ledger.receiptNo,
-        bankPaymentEntry: ledger.bankPaymentEntry || "",
-
-        itemType: ledger.itemType,
-        quantity: Number(ledger.quantity),
-        unitPrice: Number(ledger.unitPrice),
-        totalPrice: Number(ledger.totalPrice),
-
-        paidAmount: Number(ledger.paidAmount),
-        remainingBalance: Number(ledger.remaining),
-        paymentHistory: ledger.payments || []
-      }))
-    };
-
-
-    setCustomers([formattedCustomer]);
-
-    setSelectedCustomerId(member.id);
-
-
-  } catch (err) {
-
-    console.log(err);
-    setError("Failed to load customer");
-
-  } finally {
-
+       try {
+    const res = await api.get("/members");
+    setCustomers(res.data);
+      } catch (err) {
+    console.error(err);
+     } finally {
     setLoading(false);
-
-  }
-};
-
-  // Dynamic calculations per customer
-  const enrichedCustomers = useMemo(() => {
-    return customers.map((c) => {
-      const purchases = c.purchases || [];
-      const totalSpent = purchases.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
-      const totalPaid = purchases.reduce((sum, p) => sum + (Number(p.paidAmount) || 0), 0);
-      const totalBalance = purchases.reduce((sum, p) => sum + (Number(p.remainingBalance) || 0), 0);
-      return {
-        ...c,
-        totalSpent,
-        totalPaid,
-        totalBalance,
-      };
-    });
-  }, [customers]);
-
-  const activeCustomer = useMemo(() => {
-    return enrichedCustomers.find((c) => String(c.id) === String(selectedCustomerId)) || enrichedCustomers[0];
-  }, [enrichedCustomers, selectedCustomerId]);
-
-  // Group purchases by date
-  const groupedPurchases = useMemo(() => {
-    if (!activeCustomer || !activeCustomer.purchases) return {};
-    return activeCustomer.purchases.reduce((groups, purchase) => {
-      const date = purchase.date;
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(purchase);
-      return groups;
-    }, {});
-  }, [activeCustomer]);
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handlePaymentFormChange = (e) => {
-    const { name, value } = e.target;
-    setPaymentFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const openAddModal = () => {
-    setEditingPurchaseId(null);
-    setFormData({
-      date: new Date().toISOString().split("T")[0],
-      receiptNumber: "",
-      bankPaymentEntry: "",
-      itemType: "",
-      quantity: "",
-      unitPrice: "",
-      paidAmount: "",
-    });
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (purchase) => {
-    setEditingPurchaseId(purchase.id);
-    setFormData({
-      date: purchase.date,
-      receiptNumber: purchase.receiptNumber,
-      bankPaymentEntry: purchase.bankPaymentEntry || "",
-      itemType: purchase.itemType,
-      quantity: purchase.quantity,
-      unitPrice: purchase.unitPrice,
-      paidAmount: purchase.paidAmount,
-    });
-    setIsModalOpen(true);
-  };
-
-  const openPaymentModal = (purchase) => {
-    setSelectedPurchaseForPayment(purchase);
-    setPaymentFormData({
-      date: new Date().toISOString().split("T")[0],
-      amount: "",
-      bankPaymentEntry: "",
-    });
-    setIsPaymentModalOpen(true);
-  };
-
-  // Trigger print view
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // 2. CREATE OR UPDATE PURCHASE ENTRY IN BACKEND & LOCAL STATE
-   const handleFormSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!activeCustomer) return;
-
-
-  const qty = Number(formData.quantity);
-  const price = Number(formData.unitPrice);
-  const paid = Number(formData.paidAmount);
-
-  const totalPrice = qty * price;
-  const remaining = totalPrice - paid;
-
-
-  try {
-
-    if(editingPurchaseId){
-
-      await api.patch(`/ledger/${editingPurchaseId}`, {
-
-        receiptNo: formData.receiptNumber,
-        date: formData.date,
-        itemType: formData.itemType,
-        quantity: qty,
-        unitPrice: price,
-        totalPrice,
-        paidAmount: paid,
-        remaining,
-        bankPaymentEntry: formData.bankPaymentEntry
-
-      });
-
-
-    }else{
-
-
-      await api.post("/ledger",{
-
-        memberId: activeCustomer.id,
-
-        receiptNo: formData.receiptNumber,
-
-        date: formData.date,
-
-        itemType: formData.itemType,
-
-        quantity: qty,
-
-        unitPrice: price,
-
-        totalPrice,
-
-        paidAmount: paid,
-
-        remaining,
-
-        bankPaymentEntry: formData.bankPaymentEntry
-
-      });
-
     }
+  };
 
 
-    await fetchCustomers();
-
-    setIsModalOpen(false);
-
-
-  } catch(err){
-
-    console.log(err);
-
-    alert("Failed to save transaction");
-
-  }
-
-};
-
-  // ADD INDIVIDUAL PAYMENT ENTRY (DATE-BASED PAYMENT RECORD)
-   const handleAddPaymentSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!selectedPurchaseForPayment) return;
-
-
-  const amount = Number(paymentFormData.amount);
-
-
-  try {
-
-    await api.post("/payment", {
-      ledgerId: selectedPurchaseForPayment.id,
-      date: paymentFormData.date,
-      amount: amount,
-      bankPaymentEntry: paymentFormData.bankPaymentEntry
-    });
-
-
-    await fetchCustomers();
-
-
-    setIsPaymentModalOpen(false);
-
-
-  } catch(err){
-
-    console.log(err);
-
-    alert("Failed to save payment");
-
-  }
-
-};
-  // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
-  const handleSettleBalance = async (purchase) => {
-  try {
-
-    const remaining = purchase.remainingBalance;
-
-    if (remaining <= 0) return;
-
-
-    await api.post("/payment", {
-      ledgerId: purchase.id,
-      date: new Date().toISOString().split("T")[0],
-      amount: remaining,
-      bankPaymentEntry: "Full Settlement"
-    });
-
-
-    await fetchCustomers();
-
-
-  } catch(err){
-
-    console.log(err);
-
-    alert("Failed to settle balance.");
-
-  }
-};
-
-  // 4. DELETE TRANSACTION FROM BACKEND & LOCAL STATE
-  const handleDeletePurchase = async (purchaseId) => {
-
-  if(window.confirm("Are you sure you want to delete this transaction record?")){
-
-    try {
-
-      await api.delete(`/ledger/${purchaseId}`);
-
-      await fetchCustomers();
-
-    } catch(err){
-
-      console.log(err);
-      alert("Failed to delete transaction record.");
-
-    }
-
-  }
-
-};
-  if (loading) {
-    return (
-      <CenterLayout>
-        <div className="p-4 text-center text-gray-600 font-semibold">
-          Loading customer records... / እባክዎ ትንሽ ይጠብቁ...
-        </div>
-      </CenterLayout>
-    );
-  }
 
   return (
     <CenterLayout>
-      {/* CSS Rules to format the printable PDF statement */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-statement, #printable-statement * {
-            visibility: visible;
-          }
-          #printable-statement {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white;
-            color: black;
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-header {
-            display: flex !important;
-          }
-        }
-      `}</style>
-
-      <div className="w-full bg-gray-100 min-h-screen pt-1 px-4 pb-4 md:pt-2 md:px-6 md:pb-6 font-sans">
-        {/* Factory Header Banner (Screen Only) */}
-        <div className="bg-[#5516DA] text-white rounded-xl p-3 mb-4 shadow-sm flex justify-between items-center no-print">
+      <div className="w-full p-6 bg-gray-50 min-h-screen">
+        
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-lg md:text-xl font-extrabold tracking-wide">
-              መንሱር ሱልጣን ዱቄት ፋብሪካ
+            <h1 className="text-2xl font-bold text-gray-800">
+              Recently Registered Customers / በቅርብ የተመዘገቡ ደንበኞች
             </h1>
-            <p className="text-xs text-purple-200">Mansur Sultan Flour Factory — Customer Ledger</p>
+            <p className="text-sm text-gray-500 mt-1">
+              View customer history, payment statuses, and detailed receipts.
+            </p>
           </div>
           <button
-            onClick={() => navigate(-1)}
-            className="text-xs text-purple-200 hover:text-white underline cursor-pointer"
+            onClick={() => navigate("/newevent")}
+            style={{ backgroundColor: "#5516DA" }}
+            className="flex items-center justify-center gap-2 hover:opacity-90 text-white font-medium px-4 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer"
           >
-            Back / ተመለስ
+            <MdAdd className="text-xl" />
+            <span>Add Customer / ደንበኛ ጨምር</span>
           </button>
         </div>
 
-        {/* Full-width Details & History Panel */}
-        <div id="printable-statement" className="space-y-4">
-          {/* Printable Header - Visible ONLY in Print Mode */}
-          <div className="print-header hidden justify-between items-center border-b-2 border-gray-800 pb-4 mb-4">
-            <div className="flex items-center gap-4">
-              <img src="/image.png" alt="Factory Logo" className="w-16 h-16 object-contain" />
-              <div>
-                <h1 className="text-2xl font-black text-gray-900 tracking-wide">
-                  መንሱር ሱልጣን ዱቄት ፋብሪካ
-                </h1>
-                <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
-                  Mansur Sultan Flour Factory — Customer Statement
-                </p>
-              </div>
-            </div>
-            <div className="text-right text-xs text-gray-600">
-              <p className="font-bold text-gray-800">Date / ቀን:</p>
-              <p>{new Date().toISOString().split("T")[0]}</p>
-            </div>
+        {/* Controls: Search Bar */}
+        <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-200 mb-6">
+          <div className="relative max-w-md w-full">
+            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+            <input
+              type="text"
+              placeholder="Search by name, phone, or receipt number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
+            />
           </div>
-
-          {activeCustomer && (
-            <>
-              {/* Profile Banner */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">{activeCustomer.customerName}</h2>
-                  <p className="text-sm text-gray-500">Phone: {activeCustomer.phoneNumber}</p>
-                </div>
-                <div className="flex items-center gap-2 no-print">
-                  <button
-                    onClick={handlePrint}
-                    className="bg-gray-800 hover:bg-gray-900 text-white font-semibold text-sm px-3 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    title="Print or Save PDF Statement"
-                  >
-                    🖨️ Print / PDF
-                  </button>
-                  <button
-                    onClick={openAddModal}
-                    className="bg-[#5516DA] hover:bg-[#450ec2] text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    + Add New Purchase / አዲስ ግዥ
-                  </button>
-                </div>
-              </div>
-
-              {/* KPI Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm">
-                  <p className="text-xs font-bold text-gray-400 uppercase">Total Purchases</p>
-                  <p className="text-xl font-extrabold text-gray-800 mt-1">
-                    {activeCustomer.totalSpent.toFixed(2)} <span className="text-xs text-gray-500 font-normal">ETB</span>
-                  </p>
-                </div>
-                <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm">
-                  <p className="text-xs font-bold text-green-600 uppercase">Total Paid</p>
-                  <p className="text-xl font-extrabold text-green-700 mt-1">
-                    {activeCustomer.totalPaid.toFixed(2)} <span className="text-xs text-gray-500 font-normal">ETB</span>
-                  </p>
-                </div>
-                <div className={`p-3.5 rounded-xl border shadow-sm ${activeCustomer.totalBalance > 0 ? "bg-red-50 border-red-200" : "bg-white border-gray-200"}`}>
-                  <p className={`text-xs font-bold uppercase ${activeCustomer.totalBalance > 0 ? "text-red-600" : "text-gray-400"}`}>
-                    Remaining Balance
-                  </p>
-                  <p className={`text-xl font-extrabold mt-1 ${activeCustomer.totalBalance > 0 ? "text-red-700" : "text-gray-800"}`}>
-                    {activeCustomer.totalBalance.toFixed(2)} <span className="text-xs text-gray-500 font-normal">ETB</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Purchases Table Grouped by Date */}
-              <div className="space-y-3">
-                {Object.keys(groupedPurchases).length === 0 ? (
-                  <div className="bg-white p-6 text-center rounded-xl border border-gray-200 text-gray-500">
-                    No purchases found for this customer.
-                  </div>
-                ) : (
-                  Object.entries(groupedPurchases).map(([date, items]) => (
-                    <div key={date} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                      {/* Group Header */}
-                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-                        <span className="font-bold text-gray-700 text-xs tracking-wide uppercase">
-                          📅 Date: {date}
-                        </span>
-                        <span className="text-xs font-medium text-gray-500">
-                          {items.length} item(s)
-                        </span>
-                      </div>
-
-                      {/* Items Table */}
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead className="bg-white text-gray-400 border-b border-gray-100 font-bold uppercase">
-                            <tr>
-                              <th className="p-2.5">Receipt</th>
-                              <th className="p-2.5">Item</th>
-                              <th className="p-2.5 text-right">Qty</th>
-                              <th className="p-2.5 text-right">Price</th>
-                              <th className="p-2.5 text-right">Total</th>
-                              <th className="p-2.5 text-right">Paid</th>
-                              <th className="p-2.5 text-right">Balance</th>
-                              <th className="p-2.5">Bank Ref</th>
-                              <th className="p-2.5 text-center no-print">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 text-gray-700">
-                            {items.map((item) => (
-                              <React.Fragment key={item.id}>
-                                <tr className="hover:bg-gray-50/80 transition-colors">
-                                  <td className="p-2.5 font-semibold text-gray-800">{item.receiptNumber}</td>
-                                  <td className="p-2.5 font-medium">{item.itemType}</td>
-                                  <td className="p-2.5 text-right">{item.quantity}</td>
-                                  <td className="p-2.5 text-right">{Number(item.unitPrice).toFixed(2)}</td>
-                                  <td className="p-2.5 text-right font-bold text-gray-900">{Number(item.totalPrice).toFixed(2)}</td>
-                                  <td className="p-2.5 text-right text-green-700 font-semibold">{Number(item.paidAmount).toFixed(2)}</td>
-                                  <td className={`p-2.5 text-right font-bold ${item.remainingBalance > 0 ? "text-red-600" : "text-gray-400"}`}>
-                                    {Number(item.remainingBalance).toFixed(2)}
-                                  </td>
-                                  <td className="p-2.5 text-gray-400 text-[11px]">{item.bankPaymentEntry || "-"}</td>
-                                  <td className="p-2.5 text-center no-print">
-                                    <div className="flex items-center justify-center gap-1.5">
-                                      {item.remainingBalance > 0 && (
-                                        <>
-                                          <button
-                                            onClick={() => openPaymentModal(item)}
-                                            title="Record Partial Payment with Date"
-                                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
-                                          >
-                                            + Pay Entry
-                                          </button>
-                                          <button
-                                            onClick={() => handleSettleBalance(item)}
-                                            title="Settle full remaining balance"
-                                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
-                                          >
-                                            Pay Full
-                                          </button>
-                                        </>
-                                      )}
-                                      <button
-                                        onClick={() => openEditModal(item)}
-                                        title="Edit Entry"
-                                        className="bg-purple-50 hover:bg-purple-100 text-[#5516DA] border border-purple-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeletePurchase(item.id)}
-                                        title="Delete Entry"
-                                        className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
-                                      >
-                                        Delete
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-
-                                {/* Payment History Detailed Section */}
-                                {item.paymentHistory && item.paymentHistory.length > 0 && (
-                                  <tr className="bg-gray-50/50">
-                                    <td colSpan="9" className="p-2 px-4 border-t border-dashed border-gray-200">
-                                      <div className="text-[11px] text-gray-600 font-medium space-y-1">
-                                        <p className="font-bold text-gray-700">📜 Payment History / የክፍያ ታሪክ:</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-1">
-                                          {item.paymentHistory.map((pay) => (
-                                            <div key={pay.id} className="bg-white p-1.5 rounded border border-gray-200 flex justify-between items-center shadow-2xs">
-                                              <span>📅 {pay.date}</span>
-                                              <span className="font-bold text-green-700">{Number(pay.amount).toFixed(2)} ETB</span>
-                                              {pay.bankPaymentEntry && <span className="text-[10px] text-gray-400">({pay.bankPaymentEntry})</span>}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
-                              </React.Fragment>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
         </div>
 
-        {/* Modal: Add/Edit Purchase */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-center p-4 no-print">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden">
-              <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-                <h3 className="text-md font-bold text-gray-800">
-                  {editingPurchaseId ? "Edit Transaction" : `New Entry for ${activeCustomer.customerName}`}
-                </h3>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleFormSubmit} className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Date (ቀን) *</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleFormChange}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Receipt No *</label>
-                  <input
-                    type="text"
-                    name="receiptNumber"
-                    value={formData.receiptNumber}
-                    onChange={handleFormChange}
-                    required
-                    placeholder="REC-..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block mb-1 font-semibold text-gray-600">Item Type (የዱቄት አይነት) *</label>
-                  <input
-                    type="text"
-                    name="itemType"
-                    value={formData.itemType}
-                    onChange={handleFormChange}
-                    required
-                    placeholder="e.g. የስንዴ ዱቄት 50ኪ.ግ / ፉስካ..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Quantity *</label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    min="1"
-                    value={formData.quantity}
-                    onChange={handleFormChange}
-                    required
-                    placeholder="1"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Unit Price (ETB) *</label>
-                  <input
-                    type="number"
-                    name="unitPrice"
-                    min="0"
-                    step="0.01"
-                    value={formData.unitPrice}
-                    onChange={handleFormChange}
-                    required
-                    placeholder="0.00"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Paid Amount (ETB) *</label>
-                  <input
-                    type="number"
-                    name="paidAmount"
-                    min="0"
-                    step="0.01"
-                    value={formData.paidAmount}
-                    onChange={handleFormChange}
-                    required
-                    placeholder="0.00"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Bank Ref / Transaction No</label>
-                  <input
-                    type="text"
-                    name="bankPaymentEntry"
-                    value={formData.bankPaymentEntry}
-                    onChange={handleFormChange}
-                    placeholder="CBE-..., TELEBIRR-..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
-                  >
-                    Cancel / ሰርዝ
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-[#5516DA] text-white rounded-lg hover:bg-[#450ec2] transition-all font-semibold cursor-pointer"
-                  >
-                    {editingPurchaseId ? "Save Changes" : "Add Entry / መዝግብ"}
-                  </button>
-                </div>
-              </form>
-            </div>
+        {/* Customer Data Table */}
+        <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
+                <tr>
+                  <th className="py-3.5 px-4">Receipt No</th>
+                  <th className="py-3.5 px-4">Customer Name</th>
+                  <th className="py-3.5 px-4">Phone Number</th>
+                  <th className="py-3.5 px-4">Date</th>
+                  <th className="py-3.5 px-4 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => {
+                    return (
+                      <tr key={customer.id} className="hover:bg-purple-50/40 transition-colors">
+                        <td className="py-3.5 px-4 font-medium text-gray-900">
+                          {customer.receiptNumber}
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-gray-800">
+                          {customer.customerName}
+                        </td>
+                        <td className="py-3.5 px-4 text-gray-600">
+                          {customer.phoneNumber}
+                        </td>
+                        <td className="py-3.5 px-4 text-gray-500">
+                          {customer.date}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <button
+                            onClick={() => handleViewCustomer(customer)}
+                            style={{ backgroundColor: "#5516DA" }}
+                            className="inline-flex items-center gap-1 hover:opacity-90 text-white font-medium px-3 py-1.5 rounded-md transition-colors text-xs cursor-pointer shadow-xs"
+                          >
+                            <MdVisibility className="text-base" />
+                            <span>View / ዝርዝር</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-gray-400">
+                      No matching records found / ምንም መረጃ አልተገኘም
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
 
-        {/* Modal: Add Payment with Date Calendar */}
-        {isPaymentModalOpen && selectedPurchaseForPayment && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-center p-4 no-print">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-              <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-                <div>
-                  <h3 className="text-md font-bold text-gray-800">
-                    Record Payment / ክፍያ መዝግብ
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    Remaining: <span className="text-red-600 font-bold">{selectedPurchaseForPayment.remainingBalance.toFixed(2)} ETB</span>
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsPaymentModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleAddPaymentSubmit} className="p-5 flex flex-col gap-3 text-xs">
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Payment Date (የክፍያ ቀን) *</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={paymentFormData.date}
-                    onChange={handlePaymentFormChange}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Payment Amount (ክፍያ መጠን - ETB) *</label>
-                  <input
-                    type="number"
-                    name="amount"
-                    min="1"
-                    max={selectedPurchaseForPayment.remainingBalance}
-                    step="0.01"
-                    value={paymentFormData.amount}
-                    onChange={handlePaymentFormChange}
-                    required
-                    placeholder="e.g. 500"
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold text-gray-600">Bank Ref / Transaction No (የባንክ ማረጋገጫ)</label>
-                  <input
-                    type="text"
-                    name="bankPaymentEntry"
-                    value={paymentFormData.bankPaymentEntry}
-                    onChange={handlePaymentFormChange}
-                    placeholder="CBE-..., TELEBIRR-..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsPaymentModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
-                  >
-                    Cancel / ሰርዝ
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold cursor-pointer"
-                  >
-                    Save Payment / ክፍያ መዝግብ
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </CenterLayout>
   );
