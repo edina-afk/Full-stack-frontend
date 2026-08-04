@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FaUser } from "react-icons/fa";
-import i18n from "../i18n";
+import i18n from "./i18n";
 
 function NavigationBar() {
 
