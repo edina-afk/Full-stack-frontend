@@ -85,11 +85,10 @@ const paidAmount = payments.reduce(
 
           receiptNumber: ledger.receiptNo,
 
-          bankPaymentEntry:
-            ledger.bankPaymentEntry || "",
+          bankPaymentEntry: ledger.note || "",
 
-          itemType:
-            ledger.itemType || "",
+          itemType: ledger.itemName || "",
+
 
           quantity:
             Number(ledger.quantity || 0),
@@ -245,11 +244,9 @@ const paidAmount = payments.reduce(
     receiptNo:
       formData.receiptNumber,
 
-    bankPaymentEntry:
-      formData.bankPaymentEntry,
+      note: formData.bankPaymentEntry,
 
-    itemType:
-      formData.itemType,
+      itemName: formData.itemType,
 
     quantity: qty,
 
@@ -351,11 +348,8 @@ const paidAmount = payments.reduce(
 
     receiptNo: formData.receiptNumber,
 
-    bankPaymentEntry:
-      formData.bankPaymentEntry,
-
-    itemType:
-      formData.itemType,
+    itemName: formData.itemType,
+note: formData.bankPaymentEntry,
 
     quantity: qty,
 
@@ -385,13 +379,12 @@ const paidAmount = payments.reduce(
 
     receiptNumber:
       ledger.receiptNo,
+      
+      bankPaymentEntry:
+  ledger.note || "",
 
-    bankPaymentEntry:
-      ledger.bankPaymentEntry || "",
-
-    itemType:
-      ledger.itemType,
-
+itemType:
+  ledger.itemName,
     quantity:
       Number(ledger.quantity),
 
@@ -535,9 +528,9 @@ const savedPayment = response.data;
 
   try {
 
-    await api.delete(
-      `/ledger/${purchaseId}`
-    );
+     await api.delete(
+  `/ledgers/${purchaseId}`
+);
 
 
     setCustomers((prevCustomers)=>
