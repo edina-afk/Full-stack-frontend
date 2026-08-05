@@ -508,8 +508,10 @@ const savedPayment = response.data;
 
       setIsPaymentModalOpen(false);
     } catch (err) {
-      alert("Failed to record payment.");
-    }
+  console.log(err.response);
+  console.log(err.response?.data);
+  console.log(err.response?.status);
+}
   };
 
   // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
