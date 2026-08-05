@@ -339,26 +339,25 @@ const paidAmount = payments.reduce(
 }
            else {
 
-  const payload = {
+     const payload = {
 
-    customerId: activeCustomer.id,
+  memberId: activeCustomer.id,
 
-    date: formData.date,
+  date: formData.date,
 
-    receiptNo: formData.receiptNumber,
+  receiptNo: formData.receiptNumber,
 
-    itemName: formData.itemType,
-note: formData.bankPaymentEntry,
+  itemName: formData.itemType,
 
-    quantity: qty,
+  note: formData.bankPaymentEntry,
 
-    unitPrice: price,
+  quantity: qty,
 
-    totalPrice,
+  unitPrice: price,
 
-    paidAmount: paid
+  paidAmount: paid
 
-  };
+};
 
  const response = await api.post(
   "/ledger",
