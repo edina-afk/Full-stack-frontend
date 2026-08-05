@@ -101,8 +101,7 @@ const paidAmount = payments.reduce(
           paidAmount,
 
           remainingBalance:
-            totalPrice - paidAmount,
-
+Math.max(0, totalPrice - paidAmount),
            paymentHistory: payments
         };
 
@@ -221,10 +220,15 @@ const paidAmount = payments.reduce(
     e.preventDefault();
     if (!activeCustomer) return;
 
-    const qty = parseFloat(formData.quantity) || 0;
-    const price = parseFloat(formData.unitPrice) || 0;
-    const paid = parseFloat(formData.paidAmount) || 0;
-    const totalPrice = qty * price;
+   const qty = parseFloat(formData.quantity) || 0;
+const price = parseFloat(formData.unitPrice) || 0;
+
+const totalPrice = qty * price;
+
+const paid = Math.min(
+  parseFloat(formData.paidAmount) || 0,
+  totalPrice
+);
     const remainingBalance = Math.max(0, totalPrice - paid);
 
     const initialPayment = paid > 0 ? [{
