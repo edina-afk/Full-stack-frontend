@@ -591,7 +591,7 @@ const savedPayment = response.data;
   return (
     <CenterLayout>
       {/* CSS Rules to format the printable PDF statement */}
-      <style>{`
+             <style>{`
         @media print {
           body * {
             visibility: hidden;
