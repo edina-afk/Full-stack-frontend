@@ -486,16 +486,25 @@ const savedPayment = response.data;
                     bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
                   };
                   const updatedHistory = [...existingHistory, newHistoryEntry];
-                  
-                  const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
-                  const updatedRemainingBalance = Math.max(0, p.totalPrice - updatedPaidAmount);
+                 
+                  const historyPaid = updatedHistory.reduce(
+  (sum, pay) => sum + Number(pay.amount),
+  0
+);
+
+const updatedPaidAmount =
+  Number(p.paidAmount) + Number(newPaymentAmount);
+
+const updatedRemainingBalance =
+  Math.max(0, p.totalPrice - updatedPaidAmount);
 
                   return {
                     ...p,
                     paidAmount: updatedPaidAmount,
                     remainingBalance: updatedRemainingBalance,
-                    bankPaymentEntry: paymentFormData.bankPaymentEntry || p.bankPaymentEntry,
-                    paymentHistory: updatedHistory,
+                   paymentHistory: [
+                 ...updatedHistory,
+                    ],
                   };
                 }
                 return p;
