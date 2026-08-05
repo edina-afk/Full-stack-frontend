@@ -591,32 +591,54 @@ const savedPayment = response.data;
   return (
     <CenterLayout>
       {/* CSS Rules to format the printable PDF statement */}
-             <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-statement, #printable-statement * {
-            visibility: visible;
-          }
-          #printable-statement {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white;
-            color: black;
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-header {
-            display: flex !important;
-          }
-        }
-      `}</style>
+       <style>{`
+@media print {
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-statement,
+  #printable-statement * {
+    visibility: visible;
+  }
+
+  #printable-statement {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;
+    margin: 0 auto;
+    background: white;
+    color: black;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  table {
+    width: 100% !important;
+    margin: 0 auto;
+  }
+
+  .bg-white,
+  .rounded-xl,
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+
+}
+`}</style>
 
       <div className="w-full bg-gray-100 min-h-screen pt-1 px-4 pb-4 md:pt-2 md:px-6 md:pb-6 font-sans">
         {/* Factory Header Banner (Screen Only) */}
