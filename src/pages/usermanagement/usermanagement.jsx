@@ -288,34 +288,33 @@ const paidAmount = payments.reduce(
 
                 ...p,
 
-                date:
-                  updatedLedger.date.split("T")[0],
+                  date:
+    updatedLedger.date.split("T")[0],
 
-                receiptNumber:
-                  updatedLedger.receiptNo,
+  receiptNumber:
+    updatedLedger.receiptNo,
 
-                bankPaymentEntry:
-                  updatedLedger.bankPaymentEntry || "",
+  bankPaymentEntry:
+    updatedLedger.note || "",
 
-                itemType:
-                  updatedLedger.itemType,
+  itemType:
+    updatedLedger.itemName || "",
 
-                quantity:
-                  Number(updatedLedger.quantity),
+  quantity:
+    Number(updatedLedger.quantity),
 
-                unitPrice:
-                  Number(updatedLedger.unitPrice),
+  unitPrice:
+    Number(updatedLedger.unitPrice),
 
-                totalPrice:
-                  Number(updatedLedger.totalPrice),
+  totalPrice:
+    Number(updatedLedger.totalPrice),
 
-                paidAmount:
-                  Number(updatedLedger.paidAmount),
+  paidAmount:
+    Number(updatedLedger.paidAmount),
 
-                remainingBalance:
-
-                  Number(updatedLedger.totalPrice) -
-                  Number(updatedLedger.paidAmount)
+  remainingBalance:
+    Number(updatedLedger.totalPrice) -
+    Number(updatedLedger.paidAmount),
 
               };
 
@@ -399,10 +398,10 @@ itemType:
     remainingBalance:
       Number(ledger.totalPrice) -
       Number(ledger.paidAmount),
+       
 
-    paymentHistory:
-      []
-
+      paymentHistory:
+  initialPayment
   };
 
 
@@ -528,7 +527,7 @@ const savedPayment = response.data;
   try {
 
      await api.delete(
-  `/ledgers/${purchaseId}`
+  `/ledger/${purchaseId}`
 );
 
 
