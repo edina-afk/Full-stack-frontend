@@ -536,7 +536,7 @@ const savedPayment = response.data;
   try {
 
     await api.delete(
-      `/ledgers/${purchaseId}`
+      `/ledger/${purchaseId}`
     );
 
 
