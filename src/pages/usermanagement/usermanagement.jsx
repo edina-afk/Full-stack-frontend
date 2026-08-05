@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import api from "../../api/axios";
 
-export default function CustomerDetail() {
+export default function UserManagement() {
   const navigate = useNavigate();
   const { id } = useParams();
   console.log("CUSTOMER ID:", id);
