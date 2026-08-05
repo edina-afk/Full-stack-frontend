@@ -1006,12 +1006,25 @@ const savedPayment = response.data;
                   const updatedRemainingBalance = Math.max(0, p.totalPrice - updatedPaidAmount);
 
                   return {
-                    ...p,
-                    paidAmount: updatedPaidAmount,
-                    remainingBalance: updatedRemainingBalance,
-                    bankPaymentEntry: paymentFormData.bankPaymentEntry || p.bankPaymentEntry,
-                    paymentHistory: updatedHistory,
-                  };
+  ...p,
+
+  // keep original purchase payment
+  paidAmount: p.paidAmount,
+
+  // calculate remaining from history
+  remainingBalance:
+    Math.max(
+      0,
+      p.totalPrice -
+      p.paidAmount -
+      updatedHistory.reduce(
+        (sum, pay) => sum + Number(pay.amount),
+        0
+      )
+    ),
+
+  paymentHistory: updatedHistory,
+};
                 }
                 return p;
               }),
