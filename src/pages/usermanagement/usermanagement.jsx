@@ -492,8 +492,10 @@ const savedPayment = response.data;
   0
 );
 
-const updatedPaidAmount =
-  Number(p.paidAmount) + Number(newPaymentAmount);
+const updatedPaidAmount = updatedHistory.reduce(
+  (sum,pay)=>sum + Number(pay.amount),
+  0
+);
 
 const updatedRemainingBalance =
   Math.max(0, p.totalPrice - updatedPaidAmount);
@@ -1040,51 +1042,90 @@ const savedPayment = response.data;
 
   // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
   const handleSettleBalance = async (purchase) => {
-    try {
-      const remaining = purchase.remainingBalance;
-      if (remaining <= 0) return;
+  try {
+    const remaining = Number(purchase.remainingBalance);
 
-       const newHistoryEntry = {
+    if (remaining <= 0) return;
 
-  id: savedPayment.id,
 
-  date:
-    savedPayment.date.split("T")[0],
+    const paymentPayload = {
+      ledgerId: purchase.id,
+      date: new Date().toISOString().split("T")[0],
+      amount: remaining,
+      note: "Full balance payment"
+    };
 
-  amount:
-    Number(savedPayment.amount),
 
-  bankPaymentEntry:
-    savedPayment.bankPaymentEntry || ""
+    const response = await api.post(
+      "/payments",
+      paymentPayload
+    );
 
+
+    const savedPayment = response.data;
+
+
+    const newHistoryEntry = {
+      id: savedPayment.id,
+      date: savedPayment.date.split("T")[0],
+      amount: Number(savedPayment.amount),
+      bankPaymentEntry: savedPayment.note || ""
+    };
+
+
+    setCustomers((prevCustomers) =>
+      prevCustomers.map((cust) => {
+
+        if(String(cust.id) === String(activeCustomer.id)) {
+
+          return {
+            ...cust,
+
+            purchases: cust.purchases.map((p)=>{
+
+              if(p.id === purchase.id){
+
+                return {
+                  ...p,
+
+                  paidAmount:
+                    Number(p.totalPrice),
+
+                  remainingBalance:0,
+
+                  paymentHistory:[
+                    ...(p.paymentHistory || []),
+                    newHistoryEntry
+                  ]
+                };
+
+              }
+
+              return p;
+
+            })
+          };
+
+        }
+
+        return cust;
+
+      })
+    );
+
+
+  } catch(error){
+
+    console.error(
+      error.response?.data || error
+    );
+
+    alert(
+      "Failed to settle balance"
+    );
+
+  }
 };
-
-      setCustomers((prevCustomers) =>
-        prevCustomers.map((cust) => {
-          if (String(cust.id) === String(activeCustomer.id)) {
-            return {
-              ...cust,
-              purchases: cust.purchases.map((p) => {
-                if (p.id === purchase.id) {
-                  const existingHistory = p.paymentHistory || [];
-                  return {
-                    ...p,
-                    paidAmount: p.totalPrice,
-                    remainingBalance: 0,
-                    paymentHistory: [...existingHistory, newHistoryEntry],
-                  };
-                }
-                return p;
-              }),
-            };
-          }
-          return cust;
-        })
-      );
-    } catch (err) {
-      alert("Failed to settle balance.");
-    }
-  };
 
   // 4. DELETE TRANSACTION FROM BACKEND & LOCAL STATE
     const handleDeletePurchase = async (purchaseId) => {
