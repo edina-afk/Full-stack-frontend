@@ -454,7 +454,7 @@ const paymentPayload = {
 
   amount: newPaymentAmount,
 
-  bankPaymentEntry:
+  note:
     paymentFormData.bankPaymentEntry || ""
 
 };
