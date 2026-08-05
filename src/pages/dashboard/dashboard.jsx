@@ -218,8 +218,8 @@ export default function ManageEvent() {
   
 // Navigation handler for View button
   const handleViewCustomer = (customer) => {
-    navigate("/usermanagement", { state: { customer } });
-  };
+  navigate(`/usermanagement/${customer.id}`);
+};
 
    
  
