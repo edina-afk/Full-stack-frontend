@@ -953,92 +953,124 @@ export default function CustomerDetail() {
   };
 
   // ADD INDIVIDUAL PAYMENT ENTRY (DATE-BASED PAYMENT RECORD)
-  const handleAddPaymentSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedPurchaseForPayment) return;
+   const handleAddPaymentSubmit = async (e) => {
+  e.preventDefault();
 
-    const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
-     
+  if (!selectedPurchaseForPayment) return;
+
+  const amount = Number(paymentFormData.amount) || 0;
+
+  if (amount <= 0) {
+    alert("Please enter valid payment amount");
+    return;
+  }
+
+  try {
+
+    const paymentPayload = {
+      ledgerId: selectedPurchaseForPayment.id,
+      date: paymentFormData.date,
+      amount,
+      bankPaymentEntry: paymentFormData.bankPaymentEntry || ""
+    };
 
 
-const paymentPayload = {
-
-  ledgerId: selectedPurchaseForPayment.id,
-
-  date: paymentFormData.date,
-
-  amount: newPaymentAmount,
-
-  bankPaymentEntry:
-    paymentFormData.bankPaymentEntry || ""
-
-};
-    if (newPaymentAmount <= 0) {
-      alert("Please enter a valid payment amount.");
-      return;
-    }
-
-    try {
+    // save payment history in backend
     const response = await api.post(
-  "/payments",
-  paymentPayload
-);
+      "/payments",
+      paymentPayload
+    );
 
 
-const savedPayment = response.data;
-      setCustomers((prevCustomers) =>
-        prevCustomers.map((cust) => {
-          if (String(cust.id) === String(activeCustomer.id)) {
-            return {
-              ...cust,
-              purchases: cust.purchases.map((p) => {
-                if (p.id === selectedPurchaseForPayment.id) {
-                  const existingHistory = p.paymentHistory || [];
-                  const newHistoryEntry = {
-                    id: `pay_${Date.now()}`,
-                    date: paymentFormData.date,
-                    amount: newPaymentAmount,
-                    bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
-                  };
-                  const updatedHistory = [...existingHistory, newHistoryEntry];
-                  
-                  const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
-                  const updatedRemainingBalance = Math.max(0, p.totalPrice - updatedPaidAmount);
+    const savedPayment = response.data;
 
-                  return {
-  ...p,
 
-  // keep original purchase payment
-  paidAmount: p.paidAmount,
+    // only add new history row
+    setCustomers((prevCustomers) =>
 
-  // calculate remaining from history
-  remainingBalance:
-    Math.max(
-      0,
-      p.totalPrice -
-      p.paidAmount -
-      updatedHistory.reduce(
-        (sum, pay) => sum + Number(pay.amount),
-        0
-      )
-    ),
+      prevCustomers.map((cust) => {
 
-  paymentHistory: updatedHistory,
+        if (String(cust.id) === String(activeCustomer.id)) {
+
+          return {
+
+            ...cust,
+
+            purchases: cust.purchases.map((p) => {
+
+              if (p.id === selectedPurchaseForPayment.id) {
+
+                return {
+
+                  ...p,
+
+                  paymentHistory: [
+
+                    ...(p.paymentHistory || []),
+
+                    {
+
+                      id: savedPayment.id,
+
+                      date:
+                        savedPayment.date.split("T")[0],
+
+                      amount:
+                        Number(savedPayment.amount),
+
+                      bankPaymentEntry:
+                        savedPayment.bankPaymentEntry || ""
+
+                    }
+
+                  ]
+
+                };
+
+              }
+
+
+              return p;
+
+            })
+
+          };
+
+        }
+
+
+        return cust;
+
+      })
+
+    );
+
+
+    setIsPaymentModalOpen(false);
+
+
+    setPaymentFormData({
+
+      date: new Date()
+        .toISOString()
+        .split("T")[0],
+
+      amount: "",
+
+      bankPaymentEntry: ""
+
+    });
+
+
+  } catch(error){
+
+    console.error(error);
+
+    alert("Failed to save payment history");
+
+  }
+
 };
-                }
-                return p;
-              }),
-            };
-          }
-          return cust;
-        })
-      );
-
-      setIsPaymentModalOpen(false);
-    } catch (err) {
-      alert("Failed to record payment.");
-    }
-  };
 
   // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
   const handleSettleBalance = async (purchase) => {
