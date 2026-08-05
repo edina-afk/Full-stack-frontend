@@ -259,10 +259,10 @@ const paidAmount = payments.reduce(
   };
 
 
-  const response = await api.put(
-    `/ledgers/${editingPurchaseId}`,
-    payload
-  );
+   const response = await api.patch(
+  `/ledger/${editingPurchaseId}`,
+  payload
+);
 
 
   const updatedLedger = response.data;
@@ -361,11 +361,10 @@ note: formData.bankPaymentEntry,
 
   };
 
-
-  const response = await api.post(
-    "/ledgers",
-    payload
-  );
+ const response = await api.post(
+  "/ledger",
+  payload
+);
 
 
   const ledger = response.data;
