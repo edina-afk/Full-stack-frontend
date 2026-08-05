@@ -46,9 +46,12 @@ export default function UserManagement() {
 
   // 1. FETCH CUSTOMERS FROM BACKEND ON MOUNT
   useEffect(() => {
-    fetchCustomers();
-  }, []);
 
+  if(id){
+    fetchCustomers();
+  }
+
+}, [id]);
   const fetchCustomers = async () => {
   try {
     setLoading(true);
