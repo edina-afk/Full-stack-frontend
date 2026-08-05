@@ -591,32 +591,90 @@ const savedPayment = response.data;
   return (
     <CenterLayout>
       {/* CSS Rules to format the printable PDF statement */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-statement, #printable-statement * {
-            visibility: visible;
-          }
-          #printable-statement {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white;
-            color: black;
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-header {
-            display: flex !important;
-          }
-        }
-      `}</style>
+        <style>{`
+@media print {
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    width: 100%;
+    background: white;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-statement,
+  #printable-statement * {
+    visibility: visible;
+  }
+
+  #printable-statement {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: 95%;
+    max-width: 900px;
+    background: white;
+    color: black;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse;
+    margin: 0 auto;
+  }
+
+  th,
+  td {
+    padding: 8px;
+    border: 1px solid #ccc;
+    font-size: 12px;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-red-50,
+  .shadow-sm,
+  .rounded-xl {
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  button {
+    display: none !important;
+  }
+}
+`}</style>
 
       <div className="w-full bg-gray-100 min-h-screen pt-1 px-4 pb-4 md:pt-2 md:px-6 md:pb-6 font-sans">
         {/* Factory Header Banner (Screen Only) */}
@@ -636,9 +694,12 @@ const savedPayment = response.data;
         </div>
 
         {/* Full-width Details & History Panel */}
-        <div id="printable-statement" className="space-y-4">
+         <div
+  id="printable-statement"
+  className="space-y-4 mx-auto max-w-5xl"
+>
           {/* Printable Header - Visible ONLY in Print Mode */}
-          <div className="print-header hidden justify-between items-center border-b-2 border-gray-800 pb-4 mb-4">
+          <div className="print-header hidden items-center border-b-2 border-gray-800 pb-4 mb-4">
             <div className="flex items-center gap-4">
               <img src="/image.png" alt="Factory Logo" className="w-16 h-16 object-contain" />
               <div>
@@ -659,7 +720,7 @@ const savedPayment = response.data;
           {activeCustomer && (
             <>
               {/* Profile Banner */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:text-center">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">{activeCustomer.customerName}</h2>
                   <p className="text-sm text-gray-500">Phone: {activeCustomer.phoneNumber}</p>
