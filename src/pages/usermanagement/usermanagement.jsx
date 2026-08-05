@@ -6,6 +6,7 @@ import api from "../../api/axios";
 export default function CustomerDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  console.log("CUSTOMER ID:", id);
 
   // State setup
   const [customers, setCustomers] = useState([]);
@@ -52,7 +53,7 @@ export default function CustomerDetail() {
   try {
     setLoading(true);
 
-    const response = await api.get(`/customers/${id}`);
+    const response = await api.get(`/members/${id}`);
 
     const customer = response.data;
 
