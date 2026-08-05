@@ -71,8 +71,10 @@ export default function UserManagement() {
 
         const totalPrice = Number(ledger.totalPrice || 0);
 
-const payments = ledger.payments || [];
-
+    const payments = (ledger.payments || []).map((pay)=>({
+  ...pay,
+  date: pay.date.split("T")[0]
+}));
 const paidAmount = payments.reduce(
   (sum, p) => sum + Number(p.amount || 0),
   Number(ledger.paidAmount || 0)
@@ -483,12 +485,12 @@ const savedPayment = response.data;
               purchases: cust.purchases.map((p) => {
                 if (p.id === selectedPurchaseForPayment.id) {
                   const existingHistory = p.paymentHistory || [];
-                  const newHistoryEntry = {
-                    id: `pay_${Date.now()}`,
-                    date: paymentFormData.date,
-                    amount: newPaymentAmount,
-                    bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
-                  };
+                 const newHistoryEntry = {
+  id: `pay_${Date.now()}`,
+  date: paymentFormData.date.split("T")[0],
+  amount: newPaymentAmount,
+  bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
+};
                   const updatedHistory = [...existingHistory, newHistoryEntry];
                   
                   const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
