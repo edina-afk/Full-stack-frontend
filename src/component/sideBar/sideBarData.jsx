@@ -32,12 +32,12 @@ const Data = [
     icon: MdPerson,
     size: 30,
   },
-  {
-    path: "/settings",
-    title: "Setting",
-    icon: MdSettings,
-    size: 30,
-  },
+ // {
+   // path: "/settings",
+   // title: "Setting",
+   // icon: MdSettings,
+   // size: 30,
+ // },
 ];
 
 export { Data };
