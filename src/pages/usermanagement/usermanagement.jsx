@@ -879,14 +879,15 @@ Swal.fire({
                                           </button>
                                           <button
                                             onClick={() => openEditModal(item)}
-                                            title="Settle full remaining balance"
+                                             title="Edit Entry"
                                             className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
                                           >
                                             Edit
                                           </button>
+ 
                                         </>
                                       )}
-  
+     
                                       <button
                                         onClick={() => handleDeletePurchase(item.id)}
                                         title="Delete Entry"
