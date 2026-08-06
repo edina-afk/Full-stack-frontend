@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import api from "../../api/axios";
+import Swal from "sweetalert2";
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -438,9 +439,28 @@ itemType:
 }
 
       setIsModalOpen(false);
-    } catch (err) {
-      alert("Failed to save transaction.");
-    }
+
+Swal.fire({
+  icon: "success",
+  title: editingPurchaseId 
+    ? "Updated Successfully!"
+    : "Added Successfully!",
+  text: editingPurchaseId
+    ? "Purchase information updated."
+    : "New purchase recorded.",
+  timer: 1500,
+  showConfirmButton: false,
+});
+    }  
+    catch (err) {
+
+  Swal.fire({
+    icon: "error",
+    title: "Save Failed",
+    text: "Unable to save transaction.",
+  });
+
+}
   };
 
   // ADD INDIVIDUAL PAYMENT ENTRY (DATE-BASED PAYMENT RECORD)
@@ -465,7 +485,11 @@ const paymentPayload = {
 
 };
     if (newPaymentAmount <= 0) {
-      alert("Please enter a valid payment amount.");
+      Swal.fire({
+  icon: "warning",
+  title: "Invalid Amount",
+  text: "Please enter a valid payment amount.",
+});
       return;
     }
 
@@ -512,10 +536,20 @@ const savedPayment = response.data;
         })
       );
 
-      setIsPaymentModalOpen(false);
+      Swal.fire({
+       icon: "success",
+       title: "Payment Recorded!",
+       text: "Payment history updated successfully.",
+       timer: 1500,
+      showConfirmButton: false,
+   });
       fetchCustomers();
     } catch (err) {
-      alert("Failed to record payment.");
+        Swal.fire({
+    icon:"error",
+    title:"Payment Failed",
+    text:"Unable to record payment.",
+  });
     }
   };
 
@@ -524,18 +558,36 @@ const savedPayment = response.data;
   // 4. DELETE TRANSACTION FROM BACKEND & LOCAL STATE
     const handleDeletePurchase = async (purchaseId) => {
 
-  if(!window.confirm(
-    "Are you sure you want to delete this transaction record?"
-  )) return;
+  const result = await Swal.fire({
+  title: "Delete Transaction?",
+  text: "This action cannot be undone.",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#ef4444",
+  cancelButtonColor: "#6b7280",
+  confirmButtonText: "Delete",
+  cancelButtonText: "Cancel",
+  reverseButtons: true,
+});
+
+if (!result.isConfirmed) return;
 
 
   try {
 
      await api.delete(
   `/ledger/${purchaseId}`
+
+  
 );
 
-
+Swal.fire({
+  icon: "success",
+  title: "Deleted!",
+  text: "Transaction deleted successfully.",
+  timer: 1500,
+  showConfirmButton: false,
+});
     setCustomers((prevCustomers)=>
 
       prevCustomers.map((cust)=>{
@@ -567,9 +619,11 @@ const savedPayment = response.data;
 
     console.error(error);
 
-    alert(
-      "Failed to delete transaction"
-    );
+   Swal.fire({
+  icon: "error",
+  title: "Delete Failed",
+  text: "Unable to delete the transaction.",
+});
 
   }
 
@@ -730,7 +784,22 @@ const savedPayment = response.data;
                     🖨️ Print / PDF
                   </button>
                   <button
-                    onClick={openAddModal}
+                     onClick={async()=>{
+
+ const result = await Swal.fire({
+   title:"Add New Purchase?",
+   text:"Do you want to create a new purchase entry?",
+   icon:"question",
+   showCancelButton:true,
+   confirmButtonText:"Continue",
+   cancelButtonText:"Cancel",
+ });
+
+ if(result.isConfirmed){
+   openAddModal();
+ }
+
+}}
                     className="bg-[#5516DA] hover:bg-[#450ec2] text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     + Add New Purchase / አዲስ ግዥ
@@ -815,8 +884,23 @@ const savedPayment = response.data;
                                     <div className="flex items-center justify-center gap-1.5">
                                       {item.remainingBalance > 0 && (
                                         <>
-                                          <button
-                                            onClick={() => openPaymentModal(item)}
+                                          <button 
+                                           onClick={async()=>{
+
+const result = await Swal.fire({
+ title:"Record Payment?",
+ text:"Do you want to add a new payment entry?",
+ icon:"question",
+ showCancelButton:true,
+ confirmButtonText:"Continue",
+ cancelButtonText:"Cancel",
+});
+
+if(result.isConfirmed){
+ openPaymentModal(item);
+}
+
+}}
                                             title="Record Partial Payment with Date"
                                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
                                           >
@@ -831,13 +915,29 @@ const savedPayment = response.data;
                                           </button>
                                         </>
                                       )}
+                                       
                                       <button
-                                        onClick={() => openEditModal(item)}
-                                        title="Edit Entry"
-                                        className="bg-purple-50 hover:bg-purple-100 text-[#5516DA] border border-purple-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
-                                      >
-                                        Edit
-                                      </button>
+                       onClick={async()=>{
+                       title="Edit Entry"
+                       className="bg-purple-50 hover:bg-purple-100 text-[#5516DA] border border-purple-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
+ const result = await Swal.fire({
+   title:"Edit Transaction?",
+   text:"Are you sure you want to edit this purchase?",
+   icon:"question",
+   showCancelButton:true,
+   confirmButtonText:"Yes, Edit",
+   cancelButtonText:"Cancel",
+   reverseButtons:true,
+ });
+
+ if(result.isConfirmed){
+   openEditModal(item);
+ }
+
+ }}
+>
+ Edit
+</button>
                                       <button
                                         onClick={() => handleDeletePurchase(item.id)}
                                         title="Delete Entry"
@@ -989,7 +1089,22 @@ const savedPayment = response.data;
                 <div className="sm:col-span-2 flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={async()=>{
+
+const result = await Swal.fire({
+ title:"Cancel?",
+ text:"Your entered data will be lost.",
+ icon:"warning",
+ showCancelButton:true,
+ confirmButtonText:"Yes, Cancel",
+ cancelButtonText:"Continue Editing",
+});
+
+if(result.isConfirmed){
+ setIsModalOpen(false);
+}
+
+}}
                     className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
                   >
                     Cancel / ሰርዝ
