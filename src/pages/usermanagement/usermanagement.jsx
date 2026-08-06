@@ -132,25 +132,35 @@ Math.max(0, totalPrice - paidAmount),
   }
 };
 
-  const checkReceiptExists = async (receiptNo) => {
+
+const [receiptStatus, setReceiptStatus] = useState("");
+const [receiptAvailable, setReceiptAvailable] = useState(true);
+
+ const checkReceiptExists = async (receiptNo) => {
+  if (!receiptNo) {
+    setReceiptStatus("");
+    setReceiptAvailable(true);
+    return false;
+  }
+
   try {
     const res = await api.get(`/members/check-receipt/${receiptNo}`);
 
     if (res.data.exists) {
-      Swal.fire({
-        icon: "warning",
-        title: "Receipt Number Already Exists",
-        text: "Please enter a different receipt number.",
-      });
+      setReceiptAvailable(false);
+      setReceiptStatus("❌ This receipt number is already used.");
       return true;
+    } else {
+      setReceiptAvailable(true);
+      setReceiptStatus("✅ Receipt number is available.");
+      return false;
     }
-
-    return false;
   } catch (err) {
     console.error(err);
     return false;
   }
 };
+ 
 
   // Dynamic calculations per customer
   const enrichedCustomers = useMemo(() => {
@@ -986,14 +996,25 @@ Swal.fire({
                 <div>
                   <label className="block mb-1 font-semibold text-gray-600">Receipt No *</label>
                   <input
-                    type="text"
-                    name="receiptNumber"
-                    value={formData.receiptNumber}
-                    onChange={handleFormChange}
-                    required
-                    placeholder="REC-..."
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
+  type="text"
+  name="receiptNumber"
+  value={formData.receiptNumber}
+  onChange={(e) => {
+    handleFormChange(e);
+    checkReceiptExists(e.target.value);
+  }}
+  required
+  placeholder="REC-..."
+  className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+/>
+
+<p
+  className={`text-sm mt-1 ${
+    receiptAvailable ? "text-green-600" : "text-red-600"
+  }`}
+>
+  {receiptStatus}
+</p>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block mb-1 font-semibold text-gray-600">Item Type (የዱቄት አይነት) *</label>
