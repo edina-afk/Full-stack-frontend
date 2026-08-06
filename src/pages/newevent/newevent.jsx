@@ -237,7 +237,7 @@ setIsSubmitting(false);
           {/* Phone Number */}
           <div className="flex flex-col">
             <label className="mb-1.5 text-sm font-semibold text-gray-700">
-              Phone Number (ስልክ ቁጥር) *
+              Phone Number (ስልክ ቁጥር) (optional)
             </label>
                <input
 type="tel"
