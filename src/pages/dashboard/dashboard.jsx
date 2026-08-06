@@ -435,7 +435,7 @@ const handleDelete = async (id) => {
                   : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
               }`}
             >
-              Has Balance / ዕዳ ያለበት ({countBalance})
+              Has Balance / ዕዳ ያለበት  
             </button>
             <button
               onClick={() => setStatusFilter("paid")}
@@ -446,7 +446,7 @@ const handleDelete = async (id) => {
                   : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
               }`}
             >
-              Fully Paid / የተከፈለ ({countPaid})
+              Fully Paid / የተከፈለ 
             </button>
           </div>
         </div>
