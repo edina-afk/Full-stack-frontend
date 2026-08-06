@@ -133,24 +133,24 @@ Math.max(0, totalPrice - paidAmount),
 };
 
   const checkReceiptExists = async (receiptNo) => {
-    try {
-      const res = await api.get(`/ledger/check-receipt/${receiptNo}`);
+  try {
+    const res = await api.get(`/members/check-receipt/${receiptNo}`);
 
-      if (res.data.exists) {
-        Swal.fire({
-          icon: "warning",
-          title: "Receipt Number Already Exists",
-          text: "Please enter a different receipt number.",
-        });
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      console.error(err);
-      return false;
+    if (res.data.exists) {
+      Swal.fire({
+        icon: "warning",
+        title: "Receipt Number Already Exists",
+        text: "Please enter a different receipt number.",
+      });
+      return true;
     }
-  };
+
+    return false;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+};
 
   // Dynamic calculations per customer
   const enrichedCustomers = useMemo(() => {
@@ -248,6 +248,7 @@ Math.max(0, totalPrice - paidAmount),
 }
    const qty = parseFloat(formData.quantity) || 0;
 const price = parseFloat(formData.unitPrice) || 0;
+
 
 const totalPrice = qty * price;
 
