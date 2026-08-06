@@ -8,17 +8,7 @@ function CenterLayout({ children }) {
     <>
       <NavigationBar />
       <SideBar />
-       <div
-        className="
-          no-scrollbar
-          ml-64
-          mr-8
-          pt-20
-          min-h-screen
-          relative
-          z-0
-        "
-      >
+       <div>
         {children}
       </div>
     </>
