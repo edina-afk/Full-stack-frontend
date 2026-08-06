@@ -32,10 +32,8 @@ export default function ManageEvent() {
 );
 
   // Function to navigate to the view route (/usermanagement)
-   const handleViewCustomer = (customer) => {
-  navigate("/usermanagement", {
-    state: { customer },
-  });
+const handleViewCustomer = (customer) => {
+  navigate(`/usermanagement/${customer.id}`);
 };
 
     useEffect(() => {
