@@ -870,42 +870,23 @@ Swal.fire({
                                       {item.remainingBalance > 0 && (
                                         <>
                                           <button 
-                                           onClick={async()=>{
-
-const result = await Swal.fire({
- title:"Record Payment?",
- text:"Do you want to add a new payment entry?",
- icon:"question",
- showCancelButton:true,
- confirmButtonText:"Continue",
- cancelButtonText:"Cancel",
-});
-
-if(result.isConfirmed){
- openPaymentModal(item);
-}
-
-}}
+                                            onClick={() => openPaymentModal(item)}
+ 
                                             title="Record Partial Payment with Date"
                                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
                                           >
                                             + Pay Entry
                                           </button>
                                           <button
-                                            onClick={() => handleSettleBalance(item)}
+                                            onClick={() => openEditModal(item)}
                                             title="Settle full remaining balance"
                                             className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
                                           >
-                                            Pay Full
+                                            Edit
                                           </button>
                                         </>
                                       )}
-                                       
-                                  <button
- onClick={() => openEditModal(item)}
->
- Edit
-</button>
+  
                                       <button
                                         onClick={() => handleDeletePurchase(item.id)}
                                         title="Delete Entry"
