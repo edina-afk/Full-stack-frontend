@@ -784,22 +784,7 @@ Swal.fire({
                     🖨️ Print / PDF
                   </button>
                   <button
-                     onClick={async()=>{
-
- const result = await Swal.fire({
-   title:"Add New Purchase?",
-   text:"Do you want to create a new purchase entry?",
-   icon:"question",
-   showCancelButton:true,
-   confirmButtonText:"Continue",
-   cancelButtonText:"Cancel",
- });
-
- if(result.isConfirmed){
-   openAddModal();
- }
-
-}}
+                   onClick={openAddModal}
                     className="bg-[#5516DA] hover:bg-[#450ec2] text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     + Add New Purchase / አዲስ ግዥ
@@ -916,25 +901,8 @@ if(result.isConfirmed){
                                         </>
                                       )}
                                        
-                                      <button
-                       onClick={async()=>{
-                       title="Edit Entry"
-                       className="bg-purple-50 hover:bg-purple-100 text-[#5516DA] border border-purple-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
- const result = await Swal.fire({
-   title:"Edit Transaction?",
-   text:"Are you sure you want to edit this purchase?",
-   icon:"question",
-   showCancelButton:true,
-   confirmButtonText:"Yes, Edit",
-   cancelButtonText:"Cancel",
-   reverseButtons:true,
- });
-
- if(result.isConfirmed){
-   openEditModal(item);
- }
-
- }}
+                                  <button
+ onClick={() => openEditModal(item)}
 >
  Edit
 </button>
