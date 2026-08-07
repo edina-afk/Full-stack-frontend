@@ -302,12 +302,12 @@ export default function UserManagement() {
 
         console.log("SENDING NEW PURCHASE:", payload);
 
-        const response = await api.post(
-          "/ledger",
-          payload
-        );
+const response = await api.post(
+  "/ledger",
+  payload
+);
 
-        console.log("SAVED LEDGER RESPONSE:", response.data);
+console.log("SAVED LEDGER RESPONSE:", response.data);
 
 
         const updatedLedger = response.data;
@@ -411,8 +411,8 @@ export default function UserManagement() {
 
 
         const ledger = response.data;
-        console.log("NOTE VALUE:", ledger.note);
-        console.log("RECEIPT VALUE:", ledger.receiptNo);
+         console.log("NOTE VALUE:", ledger.note);
+console.log("RECEIPT VALUE:", ledger.receiptNo);
 
 
         const newPurchase = {
@@ -907,33 +907,33 @@ export default function UserManagement() {
                                   <td className="p-2.5 text-gray-400 text-[11px]">{item.bankPaymentEntry || "-"}</td>
                                   <td className="p-2.5 text-center no-print">
                                     <div className="flex items-center justify-center gap-1.5">
-                                      {item.remainingBalance > 0 && (
-                                        <>
-                                          <button
-                                            onClick={() => openPaymentModal(item)}
-                                            title="Record Partial Payment with Date"
-                                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
-                                          >
-                                            + Pay Entry
-                                          </button>
+                                    {item.remainingBalance > 0 && (
+  <>
+    <button
+      onClick={() => openPaymentModal(item)}
+      title="Record Partial Payment with Date"
+      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
+    >
+      + Pay Entry
+    </button>
 
-                                          <button
-                                            onClick={() => openEditModal(item)}
-                                            title="Edit Entry"
-                                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
-                                          >
-                                            Edit
-                                          </button>
-                                        </>
-                                      )}
+    <button
+      onClick={() => openEditModal(item)}
+      title="Edit Entry"
+      className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
+    >
+      Edit
+    </button>
+  </>
+)}
 
-                                      <button
-                                        onClick={() => handleDeletePurchase(item.id)}
-                                        title="Delete Entry"
-                                        className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
-                                      >
-                                        Delete
-                                      </button>
+<button
+  onClick={() => handleDeletePurchase(item.id)}
+  title="Delete Entry"
+  className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] px-2 py-1 rounded font-medium transition-all cursor-pointer"
+>
+  Delete
+</button>
                                     </div>
                                   </td>
                                 </tr>
