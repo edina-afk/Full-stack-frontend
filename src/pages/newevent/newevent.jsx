@@ -154,15 +154,8 @@ export default function NewEvent() {
         receiptNo: formData.receiptNumber,
       });
 
-      const gregorianDate = toGregorian(
-        formData.ethiopianDate.year,
-        formData.ethiopianDate.month,
-        formData.ethiopianDate.day
-      );
-
-
       const saveDate =
-        `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
+        `${formData.ethiopianDate.year}-${String(formData.ethiopianDate.month).padStart(2, "0")}-${String(formData.ethiopianDate.day).padStart(2, "0")}`;
 
 
       const member = memberResponse.data;
@@ -402,7 +395,7 @@ export default function NewEvent() {
               placeholder="e.g. የስንዴ ዱቄት 50ኪ.ግ"
               className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-
+            -
           </div>
 
           {/* Receipt Number */}
@@ -425,8 +418,8 @@ export default function NewEvent() {
             />
 
             <p className={`text-sm mt-1 ${receiptAvailable
-                ? "text-green-600"
-                : "text-red-600"
+              ? "text-green-600"
+              : "text-red-600"
               }`}>
               {receiptStatus}
             </p>
