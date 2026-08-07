@@ -20,8 +20,20 @@ export default function UserManagement() {
   // Modal State for adding/editing purchase
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPurchaseId, setEditingPurchaseId] = useState(null);
+  const today = new Date();
+
+  const [ethYear, ethMonth, ethDay] = toEthiopian(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate()
+  );
+
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
+    date: {
+      year: ethYear,
+      month: ethMonth,
+      day: ethDay
+    },
     receiptNumber: "",
     bankPaymentEntry: "",
     itemType: "",
@@ -73,11 +85,11 @@ export default function UserManagement() {
         purchases: customer.ledgers?.map((ledger) => {
           const gDate = new Date(ledger.date);
 
-const [ethYear, ethMonth, ethDay] = toEthiopian(
-  gDate.getFullYear(),
-  gDate.getMonth() + 1,
-  gDate.getDate()
-);
+          const [ethYear, ethMonth, ethDay] = toEthiopian(
+            gDate.getFullYear(),
+            gDate.getMonth() + 1,
+            gDate.getDate()
+          );
 
           const totalPrice = Number(ledger.totalPrice || 0);
 
@@ -213,9 +225,23 @@ const [ethYear, ethMonth, ethDay] = toEthiopian(
   };
 
   const openAddModal = () => {
+
+    const today = new Date();
+
+    const [year, month, day] = toEthiopian(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      today.getDate()
+    );
+
     setEditingPurchaseId(null);
+
     setFormData({
-      date: new Date().toISOString().split("T")[0],
+      date: {
+        year,
+        month,
+        day
+      },
       receiptNumber: "",
       bankPaymentEntry: "",
       itemType: "",
@@ -223,13 +249,27 @@ const [ethYear, ethMonth, ethDay] = toEthiopian(
       unitPrice: "",
       paidAmount: "",
     });
+
     setIsModalOpen(true);
   };
 
   const openEditModal = (purchase) => {
     setEditingPurchaseId(purchase.id);
+    const gDate = new Date(purchase.date);
+
+    const [year, month, day] = toEthiopian(
+      gDate.getFullYear(),
+      gDate.getMonth() + 1,
+      gDate.getDate()
+    );
+
+
     setFormData({
-      date: purchase.date,
+      date: {
+        year,
+        month,
+        day
+      },
       receiptNumber: purchase.receiptNumber,
       bankPaymentEntry: purchase.bankPaymentEntry || "",
       itemType: purchase.itemType,
@@ -268,17 +308,15 @@ const [ethYear, ethMonth, ethDay] = toEthiopian(
     const qty = parseFloat(formData.quantity) || 0;
     const price = parseFloat(formData.unitPrice) || 0;
 
-    const [ethYear, ethMonth, ethDay] = formData.date
-      .split("-")
-      .map(Number);
-
     const gregorianDate = toGregorian(
-      ethYear,
-      ethMonth,
-      ethDay
+      formData.date.year,
+      formData.date.month,
+      formData.date.day
     );
 
-    const saveDate = `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
+
+    const saveDate =
+      `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
     const totalPrice = qty * price;
 
     const paid = Math.min(
@@ -537,7 +575,7 @@ const [ethYear, ethMonth, ethDay] = toEthiopian(
 
       ledgerId: selectedPurchaseForPayment.id,
 
-     date: paymentDate,
+      date: paymentDate,
 
       amount: newPaymentAmount,
 
@@ -1011,14 +1049,76 @@ const [ethYear, ethMonth, ethDay] = toEthiopian(
               <form onSubmit={handleFormSubmit} className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block mb-1 font-semibold text-gray-600">Date (ቀን) *</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleFormChange}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                  />
+                  {/* Ethiopian Year */}
+                  <select
+                    value={formData.date.year}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      date: {
+                        ...prev.date,
+                        year: Number(e.target.value)
+                      }
+                    }))}
+                    className="p-2 border rounded"
+                  >
+
+                    {
+                      Array.from({ length: 20 }, (_, i) => (
+                        <option key={i} value={2010 + i}>
+                          {2010 + i}
+                        </option>
+                      ))
+                    }
+
+                  </select>
+
+
+                  {/* Ethiopian Month */}
+                  <select
+                    value={formData.date.month}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      date: {
+                        ...prev.date,
+                        month: Number(e.target.value)
+                      }
+                    }))}
+                    className="p-2 border rounded"
+                  >
+
+                    {
+                      Array.from({ length: 13 }, (_, i) => (
+                        <option key={i} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))
+                    }
+
+                  </select>
+
+
+                  {/* Ethiopian Day */}
+                  <select
+                    value={formData.date.day}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      date: {
+                        ...prev.date,
+                        day: Number(e.target.value)
+                      }
+                    }))}
+                    className="p-2 border rounded"
+                  >
+
+                    {
+                      Array.from({ length: 30 }, (_, i) => (
+                        <option key={i} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))
+                    }
+
+                  </select>
                 </div>
                 <div>
                   <label className="block mb-1 font-semibold text-gray-600">Receipt No *</label>
