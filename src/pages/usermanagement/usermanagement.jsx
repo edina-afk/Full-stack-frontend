@@ -907,28 +907,26 @@ export default function UserManagement() {
                                   <td className="p-2.5 text-gray-400 text-[11px]">{item.bankPaymentEntry || "-"}</td>
                                   <td className="p-2.5 text-center no-print">
                                     <div className="flex items-center justify-center gap-1.5">
-
-                                      {/* Show Pay Entry only if balance remains */}
                                       {item.remainingBalance > 0 && (
-                                        <button
-                                          onClick={() => openPaymentModal(item)}
-                                          title="Record Partial Payment with Date"
-                                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
-                                        >
-                                          + Pay Entry
-                                        </button>
+                                        <>
+                                          <button
+                                            onClick={() => openPaymentModal(item)}
+                                            title="Record Partial Payment with Date"
+                                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
+                                          >
+                                            + Pay Entry
+                                          </button>
+
+                                          <button
+                                            onClick={() => openEditModal(item)}
+                                            title="Edit Entry"
+                                            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
+                                          >
+                                            Edit
+                                          </button>
+                                        </>
                                       )}
 
-                                      {/* Edit always visible */}
-                                      <button
-                                        onClick={() => openEditModal(item)}
-                                        title="Edit Entry"
-                                        className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
-                                      >
-                                        Edit
-                                      </button>
-
-                                      {/* Delete always visible */}
                                       <button
                                         onClick={() => handleDeletePurchase(item.id)}
                                         title="Delete Entry"
@@ -936,7 +934,6 @@ export default function UserManagement() {
                                       >
                                         Delete
                                       </button>
-
                                     </div>
                                   </td>
                                 </tr>
