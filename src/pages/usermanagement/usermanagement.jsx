@@ -1076,25 +1076,38 @@ export default function UserManagement() {
                   {/* Ethiopian Month */}
                   <select
                     value={formData.date.month}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      date: {
-                        ...prev.date,
-                        month: Number(e.target.value)
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData(prev => ({
+                        ...prev,
+                        date: {
+                          ...prev.date,
+                          month: Number(e.target.value)
+                        }
+                      }))
+                    }
                     className="p-2 border rounded"
                   >
-
-                    {
-                      Array.from({ length: 13 }, (_, i) => (
-                        <option key={i} value={i + 1}>
-                          {i + 1}
-                        </option>
-                      ))
-                    }
-
+                    {[
+                      "መስከረም",
+                      "ጥቅምት",
+                      "ኅዳር",
+                      "ታኅሣሥ",
+                      "ጥር",
+                      "የካቲት",
+                      "መጋቢት",
+                      "ሚያዚያ",
+                      "ግንቦት",
+                      "ሰኔ",
+                      "ሐምሌ",
+                      "ነሐሴ",
+                      "ጳጉሜ"
+                    ].map((monthName, index) => (
+                      <option key={index} value={index + 1}>
+                        {monthName}
+                      </option>
+                    ))}
                   </select>
+
 
 
                   {/* Ethiopian Day */}
