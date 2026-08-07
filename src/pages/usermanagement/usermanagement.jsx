@@ -56,13 +56,6 @@ export default function UserManagement() {
   }, [id]);
   const fetchCustomers = async () => {
 
-    const gDate = new Date(ledger.date);
-
-    const [ethYear, ethMonth, ethDay] = toEthiopian(
-      gDate.getFullYear(),
-      gDate.getMonth() + 1,
-      gDate.getDate()
-    );
     try {
       setLoading(true);
 
@@ -78,6 +71,15 @@ export default function UserManagement() {
         phoneNumber: customer.phone,
 
         purchases: customer.ledgers?.map((ledger) => {
+            
+          const gDate = new Date(ledger.date);
+
+  const [ethYear, ethMonth, ethDay] = toEthiopian(
+    gDate.getFullYear(),
+    gDate.getMonth() + 1,
+
+  );
+
 
           const totalPrice = Number(ledger.totalPrice || 0);
 
