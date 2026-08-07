@@ -327,7 +327,7 @@ export default function UserManagement() {
 
     const initialPayment = paid > 0 ? [{
       id: `pay_${Date.now()}`,
-      date: formData.date,
+      date: `${formData.date.year}-${String(formData.date.month).padStart(2, "0")}-${String(formData.date.day).padStart(2, "0")}`,
       amount: paid,
       bankPaymentEntry: formData.bankPaymentEntry || ""
     }] : [];
