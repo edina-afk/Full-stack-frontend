@@ -6,202 +6,202 @@ import { toGregorian, toEthiopian } from "ethiopian-date";
 
 export default function NewEvent() {
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
 
-const [isSubmitting,setIsSubmitting] = useState(false);
-const [errorMsg,setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-const [receiptStatus,setReceiptStatus] = useState("");
-const [receiptAvailable,setReceiptAvailable] = useState(false);
-
-
-// GET TODAY ETHIOPIAN DATE
-
-const today = new Date();
-
-const ethToday = toEthiopian(
- today.getFullYear(),
- today.getMonth()+1,
- today.getDate()
-);
+  const [receiptStatus, setReceiptStatus] = useState("");
+  const [receiptAvailable, setReceiptAvailable] = useState(false);
 
 
-// FORM STATE
+  // GET TODAY ETHIOPIAN DATE
 
-const [formData,setFormData] = useState({
+  const today = new Date();
 
-fullName:"",
-phone:"",
-address:"",
-
-ethiopianDate:{
- year:ethToday[0],
- month:ethToday[1],
- day:ethToday[2]
-},
+  const ethToday = toEthiopian(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate()
+  );
 
 
-itemName:"",
-quantity:"",
-unitPrice:"",
-paidAmount:"",
+  // FORM STATE
 
-receiptNumber:"",
-bankPaymentEntry:""
+  const [formData, setFormData] = useState({
 
-});
+    fullName: "",
+    phone: "",
+    address: "",
+
+    ethiopianDate: {
+      year: ethToday[0],
+      month: ethToday[1],
+      day: ethToday[2]
+    },
+
+
+    itemName: "",
+    quantity: "",
+    unitPrice: "",
+    paidAmount: "",
+
+    receiptNumber: "",
+    bankPaymentEntry: ""
+
+  });
 
 
   // Dynamic calculations on render
-  
- 
-const quantity = Number(formData.quantity) || 0;
-
-const unitPrice = Number(formData.unitPrice) || 0;
-
-const paidAmount = Number(formData.paidAmount) || 0;
 
 
-const totalPrice = quantity * unitPrice;
+  const quantity = Number(formData.quantity) || 0;
 
-const remaining = totalPrice - paidAmount;
+  const unitPrice = Number(formData.unitPrice) || 0;
 
-  const handleChange=(e)=>{
-
- const {name,value}=e.target;
-
- setFormData(prev=>({
-
-  ...prev,
-
-  [name]:value
-
- }));
-
-};
-
-const checkReceipt = async (receiptNo) => {
-
-  if (!receiptNo) {
-    setReceiptStatus("");
-    setReceiptAvailable(false);
-    return;
-  }
-
-  try {
-
-    const response = await api.get(
-      `/members/check-receipt/${receiptNo}`
-    );
+  const paidAmount = Number(formData.paidAmount) || 0;
 
 
-    if (response.data.exists) {
+  const totalPrice = quantity * unitPrice;
 
+  const remaining = totalPrice - paidAmount;
+
+  const handleChange = (e) => {
+
+    const { name, value } = e.target;
+
+    setFormData(prev => ({
+
+      ...prev,
+
+      [name]: value
+
+    }));
+
+  };
+
+  const checkReceipt = async (receiptNo) => {
+
+    if (!receiptNo) {
+      setReceiptStatus("");
       setReceiptAvailable(false);
+      return;
+    }
 
-      setReceiptStatus(
-        "❌   This receipt number is already used"
+    try {
+
+      const response = await api.get(
+        `/members/check-receipt/${receiptNo}`
       );
 
-    } else {
 
-      setReceiptAvailable(true);
+      if (response.data.exists) {
 
-      setReceiptStatus(
-        "✅ Receipt number available"
+        setReceiptAvailable(false);
+
+        setReceiptStatus(
+          "❌   This receipt number is already used"
+        );
+
+      } else {
+
+        setReceiptAvailable(true);
+
+        setReceiptStatus(
+          "✅ Receipt number available"
+        );
+
+      }
+
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault();
+
+
+    if (!receiptAvailable) {
+
+      setErrorMsg(
+        "Please enter a new receipt number"
       );
+
+      return;
 
     }
 
 
-  } catch(error) {
+    setIsSubmitting(true);
+    setErrorMsg("");
 
-    console.log(error);
-
-  }
-
-};
+    try {
 
 
-const handleSubmit = async(e)=>{
+      // CREATE MEMBER
+      const memberResponse = await api.post("/members", {
+        fullName: formData.fullName,
+        phone: formData.phone,
+        address: formData.address,
+        receiptNo: formData.receiptNumber,
+      });
 
-e.preventDefault();
-
-
-if(!receiptAvailable){
-
- setErrorMsg(
-   "Please enter a new receipt number"
- );
-
- return;
-
-}
-
-
-setIsSubmitting(true);
-setErrorMsg("");
-
-try{
+      const gregorianDate = toGregorian(
+        formData.ethiopianDate.year,
+        formData.ethiopianDate.month,
+        formData.ethiopianDate.day
+      );
 
 
-// CREATE MEMBER
-  const memberResponse = await api.post("/members", {
-  fullName: formData.fullName,
-  phone: formData.phone,
-  address: formData.address,
-  receiptNo: formData.receiptNumber,
-});
-
-const gregorianDate = toGregorian(
- formData.ethiopianDate.year,
- formData.ethiopianDate.month,
- formData.ethiopianDate.day
-);
+      const saveDate =
+        `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
 
 
-const saveDate =
-`${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2,"0")}-${String(gregorianDate[2]).padStart(2,"0")}`;
+      const member = memberResponse.data;
 
 
-const member = memberResponse.data;
 
- 
+      // CREATE LEDGER
+      await api.post("/ledger", {
+        memberId: member.id,
+        date: saveDate,
+        itemName: formData.itemName,
+        receiptNo: formData.receiptNumber,
+        quantity,
+        unitPrice,
+        paidAmount,
+        note: `${formData.receiptNumber} ${formData.bankPaymentEntry}`,
+      });
 
-// CREATE LEDGER
-await api.post("/ledger", {
-  memberId: member.id,
-  date:saveDate,
-  itemName: formData.itemName,
-  receiptNo: formData.receiptNumber,
-  quantity,
-  unitPrice,
-  paidAmount,
-  note: `${formData.receiptNumber} ${formData.bankPaymentEntry}`,
-});
+      // SUCCESS
 
-// SUCCESS
-
-navigate("/manageevent");
+      navigate("/manageevent");
 
 
-}catch(error){
+    } catch (error) {
 
-console.log(error);
+      console.log(error);
 
-setErrorMsg(error.message);
+      setErrorMsg(error.message);
 
 
-}finally{
+    } finally {
 
-setIsSubmitting(false);
+      setIsSubmitting(false);
 
-}
+    }
 
-};  
- 
-    
+  };
+
+
   return (
     <CenterLayout>
       <div className="w-full box-border p-8 bg-white rounded-lg shadow-md font-sans">
@@ -217,16 +217,16 @@ setIsSubmitting(false);
         )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          
+
           {/* Customer Name */}
           <div className="flex flex-col">
             <label className="mb-1.5 text-sm font-semibold text-gray-700">
               Customer Name (የደንበኛ ስም) *
             </label>
             <input
-               type="text"
-               name="fullName"
-               value={formData.fullName}
+              type="text"
+              name="fullName"
+              value={formData.fullName}
               onChange={handleChange}
               required
               placeholder="Enter customer name"
@@ -239,139 +239,139 @@ setIsSubmitting(false);
             <label className="mb-1.5 text-sm font-semibold text-gray-700">
               Phone Number (ስልክ ቁጥር) (optional)
             </label>
-               <input
-type="tel"
-name="phone"
-value={formData.phone}
-onChange={handleChange}
-placeholder="09..."
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="09..."
 
               className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           {/* Address */}
-<div className="flex flex-col">
-  <label className="mb-1.5 text-sm font-semibold text-gray-700">
-    Address (አድራሻ)
-  </label>
+          <div className="flex flex-col">
+            <label className="mb-1.5 text-sm font-semibold text-gray-700">
+              Address (አድራሻ)
+            </label>
 
-  <input
-    type="text"
-    name="address"
-    value={formData.address}
-    onChange={handleChange}
-    placeholder="Enter customer address"
-    className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-  />
-</div>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Enter customer address"
+              className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
           {/* Date */}
-         {/* Ethiopian Date */}
+          {/* Ethiopian Date */}
 
-<div className="flex flex-col">
+          <div className="flex flex-col">
 
-<label className="mb-1.5 text-sm font-semibold text-gray-700">
-Date (ቀን)
-</label>
-
-
-<div className="grid grid-cols-3 gap-2">
-
-<select
-value={formData.ethiopianDate.year}
-onChange={(e)=>setFormData(prev=>({
-...prev,
-ethiopianDate:{
-...prev.ethiopianDate,
-year:Number(e.target.value)
-}
-}))}
-className="p-2 border rounded"
->
-
-{
-Array.from({length:20},(_,i)=>
- <option 
-key={i}
-value={ethToday[0]-5+i}
->
-{ethToday[0]-5+i}
-</option>
-)
-}
-
-</select>
+            <label className="mb-1.5 text-sm font-semibold text-gray-700">
+              Date (ቀን)
+            </label>
 
 
+            <div className="grid grid-cols-3 gap-2">
 
-<select
-value={formData.ethiopianDate.month}
-onChange={(e)=>setFormData(prev=>({
-...prev,
-ethiopianDate:{
-...prev.ethiopianDate,
-month:Number(e.target.value)
-}
-}))}
+              <select
+                value={formData.ethiopianDate.year}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  ethiopianDate: {
+                    ...prev.ethiopianDate,
+                    year: Number(e.target.value)
+                  }
+                }))}
+                className="p-2 border rounded"
+              >
 
-className="p-2 border rounded"
->
+                {
+                  Array.from({ length: 20 }, (_, i) =>
+                    <option
+                      key={i}
+                      value={ethToday[0] - 5 + i}
+                    >
+                      {ethToday[0] - 5 + i}
+                    </option>
+                  )
+                }
 
-{
-[
-"መስከረም",
-"ጥቅምት",
-"ኅዳር",
-"ታኅሣሥ",
-"ጥር",
-"የካቲት",
-"መጋቢት",
-"ሚያዚያ",
-"ግንቦት",
-"ሰኔ",
-"ሐምሌ",
-"ነሐሴ",
-"ጳጉሜ"
-]
-.map((m,i)=>
-<option key={i} value={i+1}>
-{m}
-</option>
-)
-
-}
-
-</select>
+              </select>
 
 
 
-<select
-value={formData.ethiopianDate.day}
-onChange={(e)=>setFormData(prev=>({
-...prev,
-ethiopianDate:{
-...prev.ethiopianDate,
-day:Number(e.target.value)
-}
-}))}
+              <select
+                value={formData.ethiopianDate.month}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  ethiopianDate: {
+                    ...prev.ethiopianDate,
+                    month: Number(e.target.value)
+                  }
+                }))}
 
-className="p-2 border rounded"
->
+                className="p-2 border rounded"
+              >
 
-{
-Array.from({length:30},(_,i)=>
-<option key={i} value={i+1}>
-{i+1}
-</option>
-)
-}
+                {
+                  [
+                    "መስከረም",
+                    "ጥቅምት",
+                    "ኅዳር",
+                    "ታኅሣሥ",
+                    "ጥር",
+                    "የካቲት",
+                    "መጋቢት",
+                    "ሚያዚያ",
+                    "ግንቦት",
+                    "ሰኔ",
+                    "ሐምሌ",
+                    "ነሐሴ",
+                    "ጳጉሜ"
+                  ]
+                    .map((m, i) =>
+                      <option key={i} value={i + 1}>
+                        {m}
+                      </option>
+                    )
 
-</select>
+                }
+
+              </select>
 
 
-</div>
 
-</div>
+              <select
+                value={formData.ethiopianDate.day}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  ethiopianDate: {
+                    ...prev.ethiopianDate,
+                    day: Number(e.target.value)
+                  }
+                }))}
+
+                className="p-2 border rounded"
+              >
+
+                {
+                  Array.from({ length: 30 }, (_, i) =>
+                    <option key={i} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  )
+                }
+
+              </select>
+
+
+            </div>
+
+          </div>
 
           {/* Bank Payment Entry */}
           <div className="flex flex-col">
@@ -393,16 +393,16 @@ Array.from({length:30},(_,i)=>
             <label className="mb-1.5 text-sm font-semibold text-gray-700">
               Item Type (የእቃው አይነት) *
             </label>
-           <input
-type="text"
-name="itemName"
-value={formData.itemName}
-onChange={handleChange}
-required
-placeholder="e.g. Cement, Rebar, Paint"
-className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-/>
-            
+            <input
+              type="text"
+              name="itemName"
+              value={formData.itemName}
+              onChange={handleChange}
+              required
+              placeholder="e.g. የስንዴ ዱቄት 50ኪ.ግ"
+              className="p-2.5 rounded border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+
           </div>
 
           {/* Receipt Number */}
@@ -410,27 +410,26 @@ className="p-2.5 rounded border border-gray-300 text-base outline-none focus:rin
             <label className="mb-1.5 text-sm font-semibold text-gray-700">
               Receipt Number (ደረሰኝ ቁጥር) *
             </label>
-             <input
+            <input
               type="text"
               name="receiptNumber"
               value={formData.receiptNumber}
-              onChange={(e)=>{
+              onChange={(e) => {
 
-              handleChange(e);
-              checkReceipt(e.target.value);
+                handleChange(e);
+                checkReceipt(e.target.value);
               }}
-             required
-             placeholder="e.g. REC-1024"
-             className="p-2.5 rounded border border-gray-300 text-base"
-              />
+              required
+              placeholder="e.g. REC-1024"
+              className="p-2.5 rounded border border-gray-300 text-base"
+            />
 
-     <p className={`text-sm mt-1 ${
-     receiptAvailable
-        ? "text-green-600"
-        : "text-red-600"
-            }`}>
-                {receiptStatus}
-    </p>
+            <p className={`text-sm mt-1 ${receiptAvailable
+                ? "text-green-600"
+                : "text-red-600"
+              }`}>
+              {receiptStatus}
+            </p>
           </div>
 
           {/* Quantity */}
@@ -506,11 +505,10 @@ className="p-2.5 rounded border border-gray-300 text-base outline-none focus:rin
             </label>
             <input
               type="number"
-             value={remaining.toFixed(2)}
+              value={remaining.toFixed(2)}
               readOnly
-              className={`p-2.5 rounded border border-gray-300 text-base bg-gray-100 cursor-not-allowed outline-none font-bold ${
-                 remaining > 0 ? "text-red-600" : "text-green-700"
-              }`}
+              className={`p-2.5 rounded border border-gray-300 text-base bg-gray-100 cursor-not-allowed outline-none font-bold ${remaining > 0 ? "text-red-600" : "text-green-700"
+                }`}
             />
           </div>
 
