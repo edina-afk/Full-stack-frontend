@@ -411,7 +411,8 @@ console.log("SAVED LEDGER RESPONSE:", response.data);
 
 
         const ledger = response.data;
-        console.log("SAVED LEDGER:", ledger);
+         console.log("NOTE VALUE:", ledger.note);
+console.log("RECEIPT VALUE:", ledger.receiptNo);
 
 
         const newPurchase = {
