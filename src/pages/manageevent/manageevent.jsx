@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
 import api from "../../api/axios";
- 
+
 
 export default function ManageEvent() {
   const navigate = useNavigate();
@@ -11,43 +11,42 @@ export default function ManageEvent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
-  
+
   const customerList = customers.map((customer) => ({
-  ...customer,
-  customerName: customer.fullName,
-  phoneNumber: customer.phone,
-  receiptNumber:
-    customer.ledgers?.[0]?.receiptNo || "-",
-  date:
-    customer.ledgers?.[0]?.date?.split("T")[0] || "-",
+    ...customer,
+    customerName: customer.fullName,
+    phoneNumber: customer.phone,
+    receiptNumber:
+      customer.ledgers?.[0]?.receiptNo || "-",
+    date:
+      customer.ledgers?.[0]?.date || "-",
   }));
 
-  
   // Filter customers by name, phone, or receipt number
   const filteredCustomers = customerList.filter(
-  (c) =>
-    c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phoneNumber.includes(searchTerm) ||
-    c.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())
-);
+    (c) =>
+      c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.phoneNumber.includes(searchTerm) ||
+      c.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Function to navigate to the view route (/usermanagement)
-const handleViewCustomer = (customer) => {
-  navigate(`/usermanagement/${customer.id}`);
-};
+  const handleViewCustomer = (customer) => {
+    navigate(`/usermanagement/${customer.id}`);
+  };
 
-    useEffect(() => {
-      fetchCustomers();
-   }, []);
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
-   const fetchCustomers = async () => {
-       try {
-    const res = await api.get("/members");
-    setCustomers(res.data);
-      } catch (err) {
-    console.error(err);
-     } finally {
-    setLoading(false);
+  const fetchCustomers = async () => {
+    try {
+      const res = await api.get("/members");
+      setCustomers(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +55,7 @@ const handleViewCustomer = (customer) => {
   return (
     <CenterLayout>
       <div className="w-full p-6 bg-gray-50 min-h-screen">
-        
+
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
