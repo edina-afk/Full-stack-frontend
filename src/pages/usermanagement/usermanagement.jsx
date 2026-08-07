@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import api from "../../api/axios";
 import Swal from "sweetalert2";
+import { toGregorian, toEthiopian } from "ethiopian-date";
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -54,6 +55,14 @@ export default function UserManagement() {
 
   }, [id]);
   const fetchCustomers = async () => {
+
+    const gDate = new Date(ledger.date);
+
+    const [ethYear, ethMonth, ethDay] = toEthiopian(
+      gDate.getFullYear(),
+      gDate.getMonth() + 1,
+      gDate.getDate()
+    );
     try {
       setLoading(true);
 
@@ -84,7 +93,7 @@ export default function UserManagement() {
           return {
             id: ledger.id,
 
-            date: ledger.date.split("T")[0],
+            date: `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(ethDay).padStart(2, "0")}`,
 
             receiptNumber: ledger.receiptNo,
 
@@ -259,7 +268,17 @@ export default function UserManagement() {
     const qty = parseFloat(formData.quantity) || 0;
     const price = parseFloat(formData.unitPrice) || 0;
 
+    const [ethYear, ethMonth, ethDay] = formData.date
+      .split("-")
+      .map(Number);
 
+    const gregorianDate = toGregorian(
+      ethYear,
+      ethMonth,
+      ethDay
+    );
+
+    const saveDate = `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
     const totalPrice = qty * price;
 
     const paid = Math.min(
