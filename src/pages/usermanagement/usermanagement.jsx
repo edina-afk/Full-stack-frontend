@@ -299,8 +299,7 @@ export default function UserManagement() {
 
         const payload = {
 
-          date: formData.date,
-
+          date: saveDate,
           receiptNo:
             formData.receiptNumber,
 
@@ -403,8 +402,7 @@ export default function UserManagement() {
 
           memberId: activeCustomer.id,
 
-          date: formData.date,
-
+          date: saveDate,
           receiptNo: formData.receiptNumber,
 
           itemName: formData.itemType,
@@ -522,14 +520,24 @@ export default function UserManagement() {
     if (!selectedPurchaseForPayment) return;
 
     const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
+    const [ethYear, ethMonth, ethDay] = paymentFormData.date
+      .split("-")
+      .map(Number);
 
+    const gregorianPaymentDate = toGregorian(
+      ethYear,
+      ethMonth,
+      ethDay
+    );
+
+    const paymentDate = `${gregorianPaymentDate[0]}-${String(gregorianPaymentDate[1]).padStart(2, "0")}-${String(gregorianPaymentDate[2]).padStart(2, "0")}`;
 
 
     const paymentPayload = {
 
       ledgerId: selectedPurchaseForPayment.id,
 
-      date: paymentFormData.date,
+     date: paymentDate,
 
       amount: newPaymentAmount,
 
