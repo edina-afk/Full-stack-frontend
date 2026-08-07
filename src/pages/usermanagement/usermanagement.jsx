@@ -300,10 +300,14 @@ export default function UserManagement() {
         };
 
 
-        const response = await api.patch(
-          `/ledger/${editingPurchaseId}`,
-          payload
-        );
+        console.log("SENDING NEW PURCHASE:", payload);
+
+const response = await api.post(
+  "/ledger",
+  payload
+);
+
+console.log("SAVED LEDGER RESPONSE:", response.data);
 
 
         const updatedLedger = response.data;
