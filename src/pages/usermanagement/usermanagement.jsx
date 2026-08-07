@@ -48,119 +48,119 @@ export default function UserManagement() {
   // 1. FETCH CUSTOMERS FROM BACKEND ON MOUNT
   useEffect(() => {
 
-  if(id){
-    fetchCustomers();
-  }
+    if (id) {
+      fetchCustomers();
+    }
 
-}, [id]);
+  }, [id]);
   const fetchCustomers = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const response = await api.get(`/members/${id}`);
+      const response = await api.get(`/members/${id}`);
 
-    const customer = response.data;
+      const customer = response.data;
 
-    const formattedCustomer = {
-      id: customer.id,
+      const formattedCustomer = {
+        id: customer.id,
 
-      customerName: customer.fullName,
+        customerName: customer.fullName,
 
-      phoneNumber: customer.phone,
+        phoneNumber: customer.phone,
 
-      purchases: customer.ledgers?.map((ledger) => {
+        purchases: customer.ledgers?.map((ledger) => {
 
-        const totalPrice = Number(ledger.totalPrice || 0);
+          const totalPrice = Number(ledger.totalPrice || 0);
 
-    const payments = (ledger.payments || []).map((pay)=>({
-  ...pay,
-  date: pay.date.split("T")[0]
-}));
-const paidAmount = payments.reduce(
-  (sum, p) => sum + Number(p.amount || 0),
-  Number(ledger.paidAmount || 0)
-);
+          const payments = (ledger.payments || []).map((pay) => ({
+            ...pay,
+            date: pay.date.split("T")[0]
+          }));
+          const paidAmount = payments.reduce(
+            (sum, p) => sum + Number(p.amount || 0),
+            Number(ledger.paidAmount || 0)
+          );
 
-        return {
-          id: ledger.id,
+          return {
+            id: ledger.id,
 
-          date: ledger.date.split("T")[0],
+            date: ledger.date.split("T")[0],
 
-          receiptNumber: ledger.receiptNo,
+            receiptNumber: ledger.receiptNo,
 
-          bankPaymentEntry: ledger.note || "",
+            bankPaymentEntry: ledger.note || "",
 
-          itemType: ledger.itemName || "",
-
-
-          quantity:
-            Number(ledger.quantity || 0),
-
-          unitPrice:
-            Number(ledger.unitPrice || 0),
-
-          totalPrice,
-
-          paidAmount,
-
-          remainingBalance:
-Math.max(0, totalPrice - paidAmount),
-           paymentHistory: payments
-        };
-
-      }) || []
-    };
+            itemType: ledger.itemName || "",
 
 
-    setCustomers([formattedCustomer]);
+            quantity:
+              Number(ledger.quantity || 0),
 
-    setSelectedCustomerId(customer.id);
+            unitPrice:
+              Number(ledger.unitPrice || 0),
 
+            totalPrice,
 
-  } catch(error){
+            paidAmount,
 
-    console.error(error);
+            remainingBalance:
+              Math.max(0, totalPrice - paidAmount),
+            paymentHistory: payments
+          };
 
-    setError(
-      "Failed to load customer data"
-    );
-
-  } finally {
-
-    setLoading(false);
-
-  }
-};
+        }) || []
+      };
 
 
-const [receiptStatus, setReceiptStatus] = useState("");
-const [receiptAvailable, setReceiptAvailable] = useState(true);
+      setCustomers([formattedCustomer]);
 
- const checkReceiptExists = async (receiptNo) => {
-  if (!receiptNo) {
-    setReceiptStatus("");
-    setReceiptAvailable(true);
-    return false;
-  }
+      setSelectedCustomerId(customer.id);
 
-  try {
-    const res = await api.get(`/members/check-receipt/${receiptNo}`);
 
-    if (res.data.exists) {
-      setReceiptAvailable(false);
-      setReceiptStatus("❌ This receipt number is already used.");
-      return true;
-    } else {
+    } catch (error) {
+
+      console.error(error);
+
+      setError(
+        "Failed to load customer data"
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+
+  const [receiptStatus, setReceiptStatus] = useState("");
+  const [receiptAvailable, setReceiptAvailable] = useState(true);
+
+  const checkReceiptExists = async (receiptNo) => {
+    if (!receiptNo) {
+      setReceiptStatus("");
       setReceiptAvailable(true);
-      setReceiptStatus("✅ Receipt number is available.");
       return false;
     }
-  } catch (err) {
-    console.error(err);
-    return false;
-  }
-};
- 
+
+    try {
+      const res = await api.get(`/members/check-receipt/${receiptNo}`);
+
+      if (res.data.exists) {
+        setReceiptAvailable(false);
+        setReceiptStatus("❌ This receipt number is already used.");
+        return true;
+      } else {
+        setReceiptAvailable(true);
+        setReceiptStatus("✅ Receipt number is available.");
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
+
 
   // Dynamic calculations per customer
   const enrichedCustomers = useMemo(() => {
@@ -239,7 +239,7 @@ const [receiptAvailable, setReceiptAvailable] = useState(true);
       bankPaymentEntry: "",
     });
     setIsPaymentModalOpen(true);
-    
+
   };
 
   // Trigger print view
@@ -251,21 +251,21 @@ const [receiptAvailable, setReceiptAvailable] = useState(true);
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!activeCustomer) return;
-      if (!editingPurchaseId) {
-  const exists = await checkReceiptExists(formData.receiptNumber);
+    if (!editingPurchaseId) {
+      const exists = await checkReceiptExists(formData.receiptNumber);
 
-  if (exists) return;
-}
-   const qty = parseFloat(formData.quantity) || 0;
-const price = parseFloat(formData.unitPrice) || 0;
+      if (exists) return;
+    }
+    const qty = parseFloat(formData.quantity) || 0;
+    const price = parseFloat(formData.unitPrice) || 0;
 
 
-const totalPrice = qty * price;
+    const totalPrice = qty * price;
 
-const paid = Math.min(
-  parseFloat(formData.paidAmount) || 0,
-  totalPrice
-);
+    const paid = Math.min(
+      parseFloat(formData.paidAmount) || 0,
+      totalPrice
+    );
     const remainingBalance = Math.max(0, totalPrice - paid);
 
     const initialPayment = paid > 0 ? [{
@@ -278,223 +278,224 @@ const paid = Math.min(
     try {
       if (editingPurchaseId) {
 
-  const payload = {
+        const payload = {
 
-    date: formData.date,
+          date: formData.date,
 
-    receiptNo:
-      formData.receiptNumber,
+          receiptNo:
+            formData.receiptNumber,
 
-      note: formData.bankPaymentEntry,
+          note: formData.bankPaymentEntry,
 
-      itemName: formData.itemType,
+          itemName: formData.itemType,
 
-    quantity: qty,
+          quantity: qty,
 
-    unitPrice: price,
+          unitPrice: price,
 
-    totalPrice,
+          totalPrice,
 
-    paidAmount: paid
+          paidAmount: paid
 
-  };
-
-
-   const response = await api.patch(
-  `/ledger/${editingPurchaseId}`,
-  payload
-);
+        };
 
 
-  const updatedLedger = response.data;
+        const response = await api.patch(
+          `/ledger/${editingPurchaseId}`,
+          payload
+        );
 
 
-  setCustomers((prevCustomers)=>
+        const updatedLedger = response.data;
 
-    prevCustomers.map((cust)=>{
 
-      if(String(cust.id) === String(activeCustomer.id)){
+        setCustomers((prevCustomers) =>
 
-        return {
+          prevCustomers.map((cust) => {
 
-          ...cust,
-
-          purchases:
-
-          cust.purchases.map((p)=>{
-
-            if(p.id === editingPurchaseId){
+            if (String(cust.id) === String(activeCustomer.id)) {
 
               return {
 
-                ...p,
+                ...cust,
 
-                  date:
-    updatedLedger.date.split("T")[0],
+                purchases:
 
-  receiptNumber:
-    updatedLedger.receiptNo,
+                  cust.purchases.map((p) => {
 
-  bankPaymentEntry:
-    updatedLedger.note || "",
+                    if (p.id === editingPurchaseId) {
 
-  itemType:
-    updatedLedger.itemName || "",
+                      return {
 
-  quantity:
-    Number(updatedLedger.quantity),
+                        ...p,
 
-  unitPrice:
-    Number(updatedLedger.unitPrice),
+                        date:
+                          updatedLedger.date.split("T")[0],
 
-  totalPrice:
-    Number(updatedLedger.totalPrice),
+                        receiptNumber:
+                          updatedLedger.receiptNo,
 
-  paidAmount:
-    Number(updatedLedger.paidAmount),
+                        bankPaymentEntry:
+                          updatedLedger.note || "",
 
-  remainingBalance:
-    Number(updatedLedger.totalPrice) -
-    Number(updatedLedger.paidAmount),
+                        itemType:
+                          updatedLedger.itemName || "",
+
+                        quantity:
+                          Number(updatedLedger.quantity),
+
+                        unitPrice:
+                          Number(updatedLedger.unitPrice),
+
+                        totalPrice:
+                          Number(updatedLedger.totalPrice),
+
+                        paidAmount:
+                          Number(updatedLedger.paidAmount),
+
+                        remainingBalance:
+                          Number(updatedLedger.totalPrice) -
+                          Number(updatedLedger.paidAmount),
+
+                      };
+
+                    }
+
+                    return p;
+
+                  })
 
               };
 
             }
 
-            return p;
+
+            return cust;
 
           })
 
-        };
+        );
+
 
       }
+      else {
 
+        const payload = {
 
-      return cust;
+          memberId: activeCustomer.id,
 
-    })
+          date: formData.date,
 
-  );
+          receiptNo: formData.receiptNumber,
 
+          itemName: formData.itemType,
 
-}
-           else {
+          note: formData.bankPaymentEntry,
 
-     const payload = {
+          quantity: qty,
 
-  memberId: activeCustomer.id,
+          unitPrice: price,
 
-  date: formData.date,
-
-  receiptNo: formData.receiptNumber,
-
-  itemName: formData.itemType,
-
-  note: formData.bankPaymentEntry,
-
-  quantity: qty,
-
-  unitPrice: price,
-
-  paidAmount: paid
-
-};
-
- const response = await api.post(
-  "/ledger",
-  payload
-);
-
-
-  const ledger = response.data;
-
-
-  const newPurchase = {
-
-    id: ledger.id,
-
-    date: ledger.date.split("T")[0],
-
-    receiptNumber:
-      ledger.receiptNo,
-      
-      bankPaymentEntry:
-  ledger.note || "",
-
-itemType:
-  ledger.itemName,
-    quantity:
-      Number(ledger.quantity),
-
-    unitPrice:
-      Number(ledger.unitPrice),
-
-    totalPrice:
-      Number(ledger.totalPrice),
-
-    paidAmount:
-      Number(ledger.paidAmount),
-
-    remainingBalance:
-      Number(ledger.totalPrice) -
-      Number(ledger.paidAmount),
-       
-
-      paymentHistory:
-  initialPayment
-  };
-
-
-  setCustomers((prevCustomers)=>
-
-    prevCustomers.map((cust)=>{
-
-      if(String(cust.id) === String(activeCustomer.id)){
-
-        return {
-
-          ...cust,
-
-          purchases:[
-            newPurchase,
-            ...(cust.purchases || [])
-          ]
+          paidAmount: paid
 
         };
 
+        const response = await api.post(
+          "/ledger",
+          payload
+        );
+
+
+        const ledger = response.data;
+        console.log("SAVED LEDGER:", ledger);
+
+
+        const newPurchase = {
+
+          id: ledger.id,
+
+          date: ledger.date.split("T")[0],
+
+          receiptNumber:
+            ledger.receiptNo,
+
+          bankPaymentEntry:
+            ledger.note || "",
+
+          itemType:
+            ledger.itemName,
+          quantity:
+            Number(ledger.quantity),
+
+          unitPrice:
+            Number(ledger.unitPrice),
+
+          totalPrice:
+            Number(ledger.totalPrice),
+
+          paidAmount:
+            Number(ledger.paidAmount),
+
+          remainingBalance:
+            Number(ledger.totalPrice) -
+            Number(ledger.paidAmount),
+
+
+          paymentHistory:
+            initialPayment
+        };
+
+
+        setCustomers((prevCustomers) =>
+
+          prevCustomers.map((cust) => {
+
+            if (String(cust.id) === String(activeCustomer.id)) {
+
+              return {
+
+                ...cust,
+
+                purchases: [
+                  newPurchase,
+                  ...(cust.purchases || [])
+                ]
+
+              };
+
+            }
+
+            return cust;
+
+          })
+
+        );
+
       }
-
-      return cust;
-
-    })
-
-  );
-
-}
 
       setIsModalOpen(false);
 
-Swal.fire({
-  icon: "success",
-  title: editingPurchaseId 
-    ? "Updated Successfully!"
-    : "Added Successfully!",
-  text: editingPurchaseId
-    ? "Purchase information updated."
-    : "New purchase recorded.",
-  timer: 1500,
-  showConfirmButton: false,
-});
-    }  
+      Swal.fire({
+        icon: "success",
+        title: editingPurchaseId
+          ? "Updated Successfully!"
+          : "Added Successfully!",
+        text: editingPurchaseId
+          ? "Purchase information updated."
+          : "New purchase recorded.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
     catch (err) {
 
-  Swal.fire({
-    icon: "error",
-    title: "Save Failed",
-    text: "Unable to save transaction.",
-  });
+      Swal.fire({
+        icon: "error",
+        title: "Save Failed",
+        text: "Unable to save transaction.",
+      });
 
-}
+    }
   };
 
   // ADD INDIVIDUAL PAYMENT ENTRY (DATE-BASED PAYMENT RECORD)
@@ -503,38 +504,38 @@ Swal.fire({
     if (!selectedPurchaseForPayment) return;
 
     const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
-     
 
 
-const paymentPayload = {
 
-  ledgerId: selectedPurchaseForPayment.id,
+    const paymentPayload = {
 
-  date: paymentFormData.date,
+      ledgerId: selectedPurchaseForPayment.id,
 
-  amount: newPaymentAmount,
+      date: paymentFormData.date,
 
-  bankPaymentEntry:
-    paymentFormData.bankPaymentEntry || ""
+      amount: newPaymentAmount,
 
-};
+      bankPaymentEntry:
+        paymentFormData.bankPaymentEntry || ""
+
+    };
     if (newPaymentAmount <= 0) {
       Swal.fire({
-  icon: "warning",
-  title: "Invalid Amount",
-  text: "Please enter a valid payment amount.",
-});
+        icon: "warning",
+        title: "Invalid Amount",
+        text: "Please enter a valid payment amount.",
+      });
       return;
     }
 
     try {
-    const response = await api.post(
-  "/payments",
-  paymentPayload
-);
+      const response = await api.post(
+        "/payments",
+        paymentPayload
+      );
 
 
-const savedPayment = response.data;
+      const savedPayment = response.data;
       setCustomers((prevCustomers) =>
         prevCustomers.map((cust) => {
           if (String(cust.id) === String(activeCustomer.id)) {
@@ -543,14 +544,14 @@ const savedPayment = response.data;
               purchases: cust.purchases.map((p) => {
                 if (p.id === selectedPurchaseForPayment.id) {
                   const existingHistory = p.paymentHistory || [];
-                 const newHistoryEntry = {
-  id: `pay_${Date.now()}`,
-  date: paymentFormData.date.split("T")[0],
-  amount: newPaymentAmount,
-  bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
-};
+                  const newHistoryEntry = {
+                    id: `pay_${Date.now()}`,
+                    date: paymentFormData.date.split("T")[0],
+                    amount: newPaymentAmount,
+                    bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
+                  };
                   const updatedHistory = [...existingHistory, newHistoryEntry];
-                  
+
                   const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
                   const updatedRemainingBalance = Math.max(0, p.totalPrice - updatedPaidAmount);
 
@@ -571,97 +572,97 @@ const savedPayment = response.data;
       );
 
       Swal.fire({
-       icon: "success",
-       title: "Payment Recorded!",
-       text: "Payment history updated successfully.",
-       timer: 1500,
-      showConfirmButton: false,
-   });
+        icon: "success",
+        title: "Payment Recorded!",
+        text: "Payment history updated successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
       fetchCustomers();
     } catch (err) {
-        Swal.fire({
-    icon:"error",
-    title:"Payment Failed",
-    text:"Unable to record payment.",
-  });
+      Swal.fire({
+        icon: "error",
+        title: "Payment Failed",
+        text: "Unable to record payment.",
+      });
     }
   };
 
   // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
-  
+
   // 4. DELETE TRANSACTION FROM BACKEND & LOCAL STATE
-    const handleDeletePurchase = async (purchaseId) => {
+  const handleDeletePurchase = async (purchaseId) => {
 
-  const result = await Swal.fire({
-  title: "Delete Transaction?",
-  text: "This action cannot be undone.",
-  icon: "warning",
-  showCancelButton: true,
-  confirmButtonColor: "#ef4444",
-  cancelButtonColor: "#6b7280",
-  confirmButtonText: "Delete",
-  cancelButtonText: "Cancel",
-  reverseButtons: true,
-});
+    const result = await Swal.fire({
+      title: "Delete Transaction?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
 
-if (!result.isConfirmed) return;
-
-
-  try {
-
-     await api.delete(
-  `/ledger/${purchaseId}`
-
-  
-);
-
-Swal.fire({
-  icon: "success",
-  title: "Deleted!",
-  text: "Transaction deleted successfully.",
-  timer: 1500,
-  showConfirmButton: false,
-});
-    setCustomers((prevCustomers)=>
-
-      prevCustomers.map((cust)=>{
-
-        if(String(cust.id) === String(activeCustomer.id)){
-
-          return {
-
-            ...cust,
-
-            purchases:
-
-              cust.purchases.filter(
-                (p)=>p.id !== purchaseId
-              )
-
-          };
-
-        }
-
-        return cust;
-
-      })
-
-    );
+    if (!result.isConfirmed) return;
 
 
-  } catch(error){
+    try {
 
-    console.error(error);
+      await api.delete(
+        `/ledger/${purchaseId}`
 
-   Swal.fire({
-  icon: "error",
-  title: "Delete Failed",
-  text: "Unable to delete the transaction.",
-});
 
-  }
+      );
 
-};
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Transaction deleted successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      setCustomers((prevCustomers) =>
+
+        prevCustomers.map((cust) => {
+
+          if (String(cust.id) === String(activeCustomer.id)) {
+
+            return {
+
+              ...cust,
+
+              purchases:
+
+                cust.purchases.filter(
+                  (p) => p.id !== purchaseId
+                )
+
+            };
+
+          }
+
+          return cust;
+
+        })
+
+      );
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      Swal.fire({
+        icon: "error",
+        title: "Delete Failed",
+        text: "Unable to delete the transaction.",
+      });
+
+    }
+
+  };
   if (loading) {
     return (
       <CenterLayout>
@@ -675,7 +676,7 @@ Swal.fire({
   return (
     <CenterLayout>
       {/* CSS Rules to format the printable PDF statement */}
-        <style>{`
+      <style>{`
 @media print {
 
   @page {
@@ -778,10 +779,10 @@ Swal.fire({
         </div>
 
         {/* Full-width Details & History Panel */}
-         <div
-  id="printable-statement"
-  className="space-y-4 mx-auto max-w-5xl"
->
+        <div
+          id="printable-statement"
+          className="space-y-4 mx-auto max-w-5xl"
+        >
           {/* Printable Header - Visible ONLY in Print Mode */}
           <div className="print-header hidden items-center border-b-2 border-gray-800 pb-4 mb-4">
             <div className="flex items-center gap-4">
@@ -818,7 +819,7 @@ Swal.fire({
                     🖨️ Print / PDF
                   </button>
                   <button
-                   onClick={openAddModal}
+                    onClick={openAddModal}
                     className="bg-[#5516DA] hover:bg-[#450ec2] text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     + Add New Purchase / አዲስ ግዥ
@@ -903,9 +904,9 @@ Swal.fire({
                                     <div className="flex items-center justify-center gap-1.5">
                                       {item.remainingBalance > 0 && (
                                         <>
-                                          <button 
+                                          <button
                                             onClick={() => openPaymentModal(item)}
- 
+
                                             title="Record Partial Payment with Date"
                                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
                                           >
@@ -913,15 +914,15 @@ Swal.fire({
                                           </button>
                                           <button
                                             onClick={() => openEditModal(item)}
-                                             title="Edit Entry"
+                                            title="Edit Entry"
                                             className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-[10px] px-2 py-1 rounded font-bold transition-all cursor-pointer"
                                           >
                                             Edit
                                           </button>
- 
+
                                         </>
                                       )}
-     
+
                                       <button
                                         onClick={() => handleDeletePurchase(item.id)}
                                         title="Delete Entry"
@@ -996,25 +997,24 @@ Swal.fire({
                 <div>
                   <label className="block mb-1 font-semibold text-gray-600">Receipt No *</label>
                   <input
-  type="text"
-  name="receiptNumber"
-  value={formData.receiptNumber}
-  onChange={(e) => {
-    handleFormChange(e);
-    checkReceiptExists(e.target.value);
-  }}
-  required
-  placeholder="REC-..."
-  className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-/>
+                    type="text"
+                    name="receiptNumber"
+                    value={formData.receiptNumber}
+                    onChange={(e) => {
+                      handleFormChange(e);
+                      checkReceiptExists(e.target.value);
+                    }}
+                    required
+                    placeholder="REC-..."
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
 
-<p
-  className={`text-sm mt-1 ${
-    receiptAvailable ? "text-green-600" : "text-red-600"
-  }`}
->
-  {receiptStatus}
-</p>
+                  <p
+                    className={`text-sm mt-1 ${receiptAvailable ? "text-green-600" : "text-red-600"
+                      }`}
+                  >
+                    {receiptStatus}
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block mb-1 font-semibold text-gray-600">Item Type (የዱቄት አይነት) *</label>
@@ -1084,22 +1084,22 @@ Swal.fire({
                 <div className="sm:col-span-2 flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
                   <button
                     type="button"
-                    onClick={async()=>{
+                    onClick={async () => {
 
-const result = await Swal.fire({
- title:"Cancel?",
- text:"Your entered data will be lost.",
- icon:"warning",
- showCancelButton:true,
- confirmButtonText:"Yes, Cancel",
- cancelButtonText:"Continue Editing",
-});
+                      const result = await Swal.fire({
+                        title: "Cancel?",
+                        text: "Your entered data will be lost.",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, Cancel",
+                        cancelButtonText: "Continue Editing",
+                      });
 
-if(result.isConfirmed){
- setIsModalOpen(false);
-}
+                      if (result.isConfirmed) {
+                        setIsModalOpen(false);
+                      }
 
-}}
+                    }}
                     className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
                   >
                     Cancel / ሰርዝ
