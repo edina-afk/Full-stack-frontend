@@ -1007,7 +1007,11 @@ export default function UserManagement() {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-1">
                                           {item.paymentHistory.map((pay) => (
                                             <div key={pay.id} className="bg-white p-1.5 rounded border border-gray-200 flex justify-between items-center shadow-2xs">
-                                              <span>📅 {pay.date}</span>
+                                              <span>
+                                                📅 {typeof pay.date === "object"
+                                                  ? `${pay.date.year}-${pay.date.month}-${pay.date.day}`
+                                                  : pay.date}
+                                              </span>
                                               <span className="font-bold text-green-700">{Number(pay.amount).toFixed(2)} ETB</span>
                                               {pay.bankPaymentEntry && <span className="text-[10px] text-gray-400">({pay.bankPaymentEntry})</span>}
                                             </div>
