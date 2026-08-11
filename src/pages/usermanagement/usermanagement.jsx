@@ -253,32 +253,33 @@ export default function UserManagement() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (purchase) => {
-    setEditingPurchaseId(purchase.id);
-    const gDate = new Date(purchase.date);
+ const openEditModal = (purchase) => {
+  setEditingPurchaseId(purchase.id);
 
-    const [year, month, day] = toEthiopian(
-      gDate.getFullYear(),
-      gDate.getMonth() + 1,
-      gDate.getDate()
-    );
+  const gDate = new Date(purchase.date);
 
+  const [year, month, day] = toEthiopian(
+    gDate.getFullYear(),
+    gDate.getMonth() + 1,
+    gDate.getDate()
+  );
 
-    setFormData({
-      date: {
-        year,
-        month,
-        day
-      },
-      receiptNumber: purchase.receiptNumber,
-      bankPaymentEntry: purchase.bankPaymentEntry || "",
-      itemType: purchase.itemType,
-      quantity: purchase.quantity,
-      unitPrice: purchase.unitPrice,
-      paidAmount: purchase.paidAmount,
-    });
-    setIsModalOpen(true);
-  };
+  setFormData({
+    date: {
+      year,
+      month,
+      day,
+    },
+    receiptNumber: purchase.receiptNumber,
+    bankPaymentEntry: purchase.bankPaymentEntry || "",
+    itemType: purchase.itemType,
+    quantity: purchase.quantity,
+    unitPrice: purchase.unitPrice,
+    paidAmount: purchase.paidAmount,
+  });
+
+  setIsModalOpen(true);
+};
 
   const openPaymentModal = (purchase) => {
     setSelectedPurchaseForPayment(purchase);
