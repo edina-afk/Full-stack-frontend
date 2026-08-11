@@ -216,20 +216,39 @@ export default function UserManagement() {
 
     setIsModalOpen(true);
   };
+  
+  const handlePaymentFormChange = (e) => {
+  const { name, value } = e.target;
 
+  setPaymentFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
   const openPaymentModal = (purchase) => {
-    setSelectedPurchaseForPayment(purchase);
-    setPaymentFormData({
-      date: getTodayEthiopian(),
-      amount: "",
-      bankPaymentEntry: "",
-    });
-    setIsPaymentModalOpen(true);
-  };
+  setSelectedPurchaseForPayment(purchase);
 
-  const handlePrint = () => {
-    window.print();
-  };
+  setPaymentFormData({
+    date: getTodayEthiopian(),
+    amount: "",
+    bankPaymentEntry: "",
+  });
+
+  setIsPaymentModalOpen(true);
+};
+
+const handlePaymentFormChange = (e) => {
+  const { name, value } = e.target;
+
+  setPaymentFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+const handlePrint = () => {
+  window.print();
+};
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
