@@ -31,22 +31,24 @@ export default function ManageEvent() {
   const [loading, setLoading] = useState(true);
 
 
-  const customerList = customers.map((customer) => ({
-    ...customer,
-    customerName: customer.fullName,
-    phoneNumber: customer.phone,
-    receiptNumber:
-      customer.ledgers?.[0]?.receiptNo || "-",
-      date: formatEthiopianDate(customer.ledgers?.[0]?.date),
-  }));
+    const customerList = customers.map((customer) => ({
+  ...customer,
+  customerName: customer.fullName || "-",
+  phoneNumber: customer.phone || "-",
+  receiptNumber: customer.receiptNo || "-",
+  date: formatEthiopianDate(customer.createdAt),
+}));
 
   // Filter customers by name, phone, or receipt number
-  const filteredCustomers = customerList.filter(
-    (c) =>
-      c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phoneNumber.includes(searchTerm) ||
-      c.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())
+   const filteredCustomers = customerList.filter((c) => {
+  const search = searchTerm.toLowerCase();
+
+  return (
+    String(c.customerName).toLowerCase().includes(search) ||
+    String(c.phoneNumber).toLowerCase().includes(search) ||
+    String(c.receiptNumber).toLowerCase().includes(search)
   );
+});
 
   // Function to navigate to the view route (/usermanagement)
   const handleViewCustomer = (customer) => {
