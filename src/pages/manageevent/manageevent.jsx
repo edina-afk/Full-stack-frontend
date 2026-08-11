@@ -32,13 +32,16 @@ export default function ManageEvent() {
 
 
     const customerList = customers.map((customer) => ({
-  ...customer,
+  id: customer.id,
   customerName: customer.fullName || "-",
   phoneNumber: customer.phone || "-",
+
+  // Receipt number comes from Member table
   receiptNumber: customer.receiptNo || "-",
+
+  // Registration date comes from Member table
   date: formatEthiopianDate(customer.createdAt),
 }));
-
   // Filter customers by name, phone, or receipt number
    const filteredCustomers = customerList.filter((c) => {
   const search = searchTerm.toLowerCase();
