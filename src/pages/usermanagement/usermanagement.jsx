@@ -217,14 +217,7 @@ export default function UserManagement() {
     setIsModalOpen(true);
   };
   
-  const handlePaymentFormChange = (e) => {
-  const { name, value } = e.target;
-
-  setPaymentFormData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
+   
   const openPaymentModal = (purchase) => {
   setSelectedPurchaseForPayment(purchase);
 
