@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import api from "../../api/axios";
 
- 
+
 const GoogleIcon = (props) => (
   <svg viewBox="0 0 24 24" width="16" height="16" {...props}>
-    <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.9 1.5l2.6-2.5C16.9 3.3 14.7 2.3 12 2.3 6.9 2.3 2.7 6.6 2.7 12s4.2 9.7 9.3 9.7c5.4 0 8.9-3.8 8.9-9.1 0-.6-.1-1.1-.1-1.6H12z"/>
+    <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.9 1.5l2.6-2.5C16.9 3.3 14.7 2.3 12 2.3 6.9 2.3 2.7 6.6 2.7 12s4.2 9.7 9.3 9.7c5.4 0 8.9-3.8 8.9-9.1 0-.6-.1-1.1-.1-1.6H12z" />
   </svg>
 );
 const FacebookIcon = (props) => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
-    <path d="M13.5 21v-7.5h2.5l.4-3H13.5V8.4c0-.87.24-1.46 1.5-1.46h1.6V4.3C16.3 4.27 15.4 4.2 14.3 4.2c-2.3 0-3.9 1.4-3.9 4v2.3H7.9v3h2.5V21h3.1z"/>
+    <path d="M13.5 21v-7.5h2.5l.4-3H13.5V8.4c0-.87.24-1.46 1.5-1.46h1.6V4.3C16.3 4.27 15.4 4.2 14.3 4.2c-2.3 0-3.9 1.4-3.9 4v2.3H7.9v3h2.5V21h3.1z" />
   </svg>
 );
 const AppleIcon = (props) => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
-    <path d="M16.4 12.4c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.6-1.3-.1-2.5.8-3.1.8-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.6.7 2.6.6c1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.3-.9-2.3-3zM14.5 6c.5-.7.9-1.6.8-2.5-.8 0-1.7.5-2.3 1.2-.5.6-.9 1.5-.8 2.4.9.1 1.8-.4 2.3-1.1z"/>
+    <path d="M16.4 12.4c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.6-1.3-.1-2.5.8-3.1.8-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.6.7 2.6.6c1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.3-.9-2.3-3zM14.5 6c.5-.7.9-1.6.8-2.5-.8 0-1.7.5-2.3 1.2-.5.6-.9 1.5-.8 2.4.9.1 1.8-.4 2.3-1.1z" />
   </svg>
 );
 
@@ -50,56 +50,57 @@ const Signin = () => {
     return newErrors;
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const validationErrors = validate();
+    const validationErrors = validate();
 
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    return;
-  }
-     try {
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    try {
 
-  const response = await api.post("/auth/signin", {
-    email: formData.email,
-    password: formData.password,
-  });
+      const response = await api.post("/auth/signin", {
+        email: formData.email,
+        password: formData.password,
+      });
 
-  console.log("LOGIN RESPONSE:", response.data);
+      console.log("LOGIN RESPONSE:", response.data);
 
+      const user = response.data.user;
 
-  // save JWT
-  localStorage.setItem(
-    "token",
-    response.data.access_token
-  );
+      if (user.role !== "SUPERADMIN" && user.role !== "ADMIN") {
+        setErrors({
+          email: "You do not have permission to access the system",
+        });
+        return;
+      }
 
+      localStorage.setItem(
+        "token",
+        response.data.access_token
+      );
 
-  // save user information
-  localStorage.setItem(
-    "user",
-    JSON.stringify(response.data.user)
-  );
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
 
+      setSubmitted(true);
 
-  setSubmitted(true);
+      window.location.href = "/dashboard";
 
+    } catch (error) {
 
-  // go dashboard
-  window.location.href = "/dashboard";
+      console.log(error.response?.data);
 
+      setErrors({
+        email: error.response?.data?.message || "Login failed"
+      });
 
-} catch(error) {
-
-  console.log(error.response?.data);
-
-  setErrors({
-    email: error.response?.data?.message || "Login failed"
-  });
-
-}
-};
+    }
+  };
   // --- Forgot password handlers ---
   const openForgotPassword = (e) => {
     e.preventDefault();
@@ -269,7 +270,7 @@ const Signin = () => {
           )}
         </div>
         <div className="w-1/2 bg-gradient-to-b from-[#5516DA] to-[#2D0C74] flex flex-col items-center justify-center">
-        <img src="/image.png" alt="Ticket" className="w-1/4 max-w-[50px] mb-4" />
+          <img src="/image.png" alt="Ticket" className="w-1/4 max-w-[50px] mb-4" />
 
           <h1 className="text-white text-3xl font-bold mb-2 text-center px-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
             መንሱር ሱልጣን ዱቄት ፋብሪካ

@@ -2,11 +2,30 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
+import { toEthiopian } from "ethiopian-date";
 import api from "../../api/axios";
+
 
 
 export default function ManageEvent() {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isSuperAdmin = user?.role === "SUPERADMIN";
+
+  const formatEthiopianDate = (date) => {
+  if (!date) return "-";
+
+  const dateString = String(date).split("T")[0];
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) return "-";
+
+  const [ethYear, ethMonth, ethDay] = toEthiopian(year, month, day);
+
+  return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(
+    ethDay
+  ).padStart(2, "0")}`;
+};
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -18,8 +37,7 @@ export default function ManageEvent() {
     phoneNumber: customer.phone,
     receiptNumber:
       customer.ledgers?.[0]?.receiptNo || "-",
-    date:
-      customer.ledgers?.[0]?.date || "-",
+      date: formatEthiopianDate(customer.ledgers?.[0]?.date),
   }));
 
   // Filter customers by name, phone, or receipt number
@@ -74,6 +92,14 @@ export default function ManageEvent() {
             <MdAdd className="text-xl" />
             <span>Add Customer / ደንበኛ ጨምር</span>
           </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => navigate("/create-admin")}
+              className="bg-[#5516DA] text-white px-5 py-2.5 rounded-lg"
+            >
+              Add Admin
+            </button>
+          )}
         </div>
 
         {/* Controls: Search Bar */}
