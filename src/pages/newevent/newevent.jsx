@@ -82,46 +82,39 @@ export default function NewEvent() {
   };
 
   const checkReceipt = async (receiptNo) => {
+    const value = receiptNo.trim();
 
-    if (!receiptNo) {
+    if (!value) {
       setReceiptStatus("");
       setReceiptAvailable(false);
       return;
     }
 
     try {
-
       const response = await api.get(
-        `/members/check-receipt/${receiptNo}`
+        `/members/check-receipt/${encodeURIComponent(value)}`
       );
 
-
       if (response.data.exists) {
-
         setReceiptAvailable(false);
-
-        setReceiptStatus(
-          "❌   This receipt number is already used"
-        );
-
+        setReceiptStatus("❌ This receipt number is already used");
       } else {
-
         setReceiptAvailable(true);
-
-        setReceiptStatus(
-          "✅ Receipt number available"
-        );
-
+        setReceiptStatus("✅ Receipt number available");
       }
-
-
     } catch (error) {
+      console.error(
+        "CHECK RECEIPT ERROR:",
+        error.response?.data || error
+      );
 
-      console.log(error);
-
+      setReceiptAvailable(false);
+      setReceiptStatus("❌ Could not check receipt number");
     }
-
   };
+
+
+
 
 
   const handleSubmit = async (e) => {
@@ -408,8 +401,11 @@ export default function NewEvent() {
               name="receiptNumber"
               value={formData.receiptNumber}
               onChange={(e) => {
-
                 handleChange(e);
+                setReceiptAvailable(false);
+                setReceiptStatus("");
+              }}
+              onBlur={(e) => {
                 checkReceipt(e.target.value);
               }}
               required

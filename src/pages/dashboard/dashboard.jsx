@@ -222,9 +222,7 @@ export default function ManageEvent() {
 };
 
    
- 
 const handleDelete = async (id) => {
-
   const result = await Swal.fire({
     title: "Are you sure?",
     text: "This customer will be permanently deleted!",
@@ -233,43 +231,38 @@ const handleDelete = async (id) => {
     confirmButtonColor: "#d33",
     cancelButtonColor: "#5516DA",
     confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel"
+    cancelButtonText: "Cancel",
   });
-
 
   if (!result.isConfirmed) return;
 
-
   try {
+    const user = JSON.parse(localStorage.getItem("user"));
 
-    await api.delete(`/members/${id}`);
+    await api.delete(`/members/${id}`, {
+      headers: {
+        "user-role": user?.role,
+      },
+    });
 
-    fetchMembers();
-
+    await fetchMembers();
 
     Swal.fire({
       title: "Deleted!",
       text: "Customer deleted successfully.",
       icon: "success",
       timer: 2000,
-      showConfirmButton: false
+      showConfirmButton: false,
     });
-
-
   } catch (err) {
-
-    console.error(err);
+    console.error("DELETE ERROR:", err.response?.data || err);
 
     Swal.fire({
       title: "Error!",
-      text: "Failed to delete customer.",
-      icon: "error"
+      text: err.response?.data?.message || "Failed to delete customer.",
+      icon: "error",
     });
-
   }
-};
-    const exportPDF = () => {
-  window.print();
 };
 
    return (
@@ -503,13 +496,15 @@ const handleDelete = async (id) => {
       <span>View</span>
     </button>
 
-    <button
-      onClick={() => handleDelete(customer.id)}
-      className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md"
-    >
-      <MdDelete />
-      <span>Delete</span>
-    </button>
+    {isSuperAdmin && (
+  <button
+    onClick={() => handleDelete(customer.id)}
+    className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md"
+  >
+    <MdDelete />
+    <span>Delete</span>
+  </button>
+)}
   </div>
 </td>
                       </tr>
