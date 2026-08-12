@@ -222,7 +222,7 @@ export default function ManageEvent() {
 };
 
    
-const handleDelete = async (id) => {
+ const handleDelete = async (id) => {
   const result = await Swal.fire({
     title: "Are you sure?",
     text: "This customer will be permanently deleted!",
@@ -238,6 +238,9 @@ const handleDelete = async (id) => {
 
   try {
     const user = JSON.parse(localStorage.getItem("user"));
+
+    console.log("USER FROM LOCAL STORAGE:", user);
+    console.log("ROLE BEING SENT:", user?.role);
 
     await api.delete(`/members/${id}`, {
       headers: {
