@@ -22,10 +22,13 @@ export default function ManageEvent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // Options: "all", "balance", "paid";
   const [currentPage, setCurrentPage] = useState(1);
- const customersPerPage = 10;
+
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isSuperAdmin = user?.role === "SUPERADMIN";
+  const customersPerPage = 10;
 
 
-  
+
   useEffect(() => {
     fetchMembers();
   }, []);
@@ -64,14 +67,14 @@ export default function ManageEvent() {
 
   const totalCustomersCount = customers.length;
 
-   // Status breakdown counts
+  // Status breakdown counts
   const countPaid = customers.filter((c) => Number(c.remainingBalance || 0) <= 0).length;
   const countBalance = customers.filter((c) => Number(c.remainingBalance || 0) > 0).length;
 
 
 
 
-  const  totalPurchases = customers.reduce(
+  const totalPurchases = customers.reduce(
     (sum, customer) => {
 
       const ledgers = Array.isArray(customer.ledgers)
@@ -119,7 +122,7 @@ export default function ManageEvent() {
 
 
 
-  const  remainingBalance = customers.reduce(
+  const remainingBalance = customers.reduce(
     (sum, customer) => {
 
       const ledgers = Array.isArray(customer.ledgers)
@@ -144,129 +147,126 @@ export default function ManageEvent() {
 
   // Search
 
- const filteredCustomers = customers
-  .filter((customer) => {
+  const filteredCustomers = customers
+    .filter((customer) => {
 
-    // Calculate customer remaining balance
-    const balance = (customer.ledgers || []).reduce(
-      (sum, ledger) =>
-        sum + Number(ledger.remaining || 0),
-      0
-    );
-
-
-    // Status filter
-    if (statusFilter === "balance" && balance <= 0) {
-      return false;
-    }
+      // Calculate customer remaining balance
+      const balance = (customer.ledgers || []).reduce(
+        (sum, ledger) =>
+          sum + Number(ledger.remaining || 0),
+        0
+      );
 
 
-    if (statusFilter === "paid" && balance > 0) {
-      return false;
-    }
+      // Status filter
+      if (statusFilter === "balance" && balance <= 0) {
+        return false;
+      }
 
 
-    // Search filter
-    const search = searchTerm.toLowerCase();
+      if (statusFilter === "paid" && balance > 0) {
+        return false;
+      }
 
 
-    return (
-      customer.fullName
-        ?.toLowerCase()
-        .includes(search)
+      // Search filter
+      const search = searchTerm.toLowerCase();
 
-      ||
 
-      customer.phone
-        ?.includes(searchTerm)
-
-      ||
-
-      customer.ledgers?.some((ledger) =>
-        ledger.receiptNo
+      return (
+        customer.fullName
           ?.toLowerCase()
           .includes(search)
-      )
 
-      ||
+        ||
 
-      customer.ledgers?.some((ledger) =>
-        ledger.date
-          ?.toString()
-          .includes(searchTerm)
-      )
+        customer.phone
+          ?.includes(searchTerm)
+
+        ||
+
+        customer.ledgers?.some((ledger) =>
+          ledger.receiptNo
+            ?.toLowerCase()
+            .includes(search)
+        )
+
+        ||
+
+        customer.ledgers?.some((ledger) =>
+          ledger.date
+            ?.toString()
+            .includes(searchTerm)
+        )
+      );
+
+    })
+    .sort(
+      (a, b) =>
+        a.fullName.localeCompare(b.fullName)
     );
-
-  })
-  .sort(
-    (a,b)=>
-      a.fullName.localeCompare(b.fullName)
-  );
 
 
   const indexOfLastCustomer = currentPage * customersPerPage;
   const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
 
-   const currentCustomers = filteredCustomers.slice(
-  indexOfFirstCustomer,
-  indexOfLastCustomer
+  const currentCustomers = filteredCustomers.slice(
+    indexOfFirstCustomer,
+    indexOfLastCustomer
   );
 
   const totalPages = Math.ceil(
-  filteredCustomers.length / customersPerPage
+    filteredCustomers.length / customersPerPage
   );
-  
-// Navigation handler for View button
+
+  // Navigation handler for View button
   const handleViewCustomer = (customer) => {
-  navigate(`/usermanagement/${customer.id}`);
-};
+    navigate(`/usermanagement/${customer.id}`);
+  };
 
-   
- const handleDelete = async (id) => {
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: "This customer will be permanently deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#5516DA",
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-  });
 
-  if (!result.isConfirmed) return;
-
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    console.log("USER FROM LOCAL STORAGE:", user);
-    console.log("ROLE BEING SENT:", user?.role);
-
-     await api.delete(`/members/${id}`);
-
-    await fetchMembers();
-
-    Swal.fire({
-      title: "Deleted!",
-      text: "Customer deleted successfully.",
-      icon: "success",
-      timer: 2000,
-      showConfirmButton: false,
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This customer will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#5516DA",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
     });
-  } catch (err) {
-    console.error("DELETE ERROR:", err.response?.data || err);
 
-    Swal.fire({
-      title: "Error!",
-      text: err.response?.data?.message || "Failed to delete customer.",
-      icon: "error",
-    });
-  }
-};
+    if (!result.isConfirmed) return;
 
-   return (
+    try {
+      await api.delete(`/members/${id}`);
+
+      await fetchMembers();
+
+      Swal.fire({
+        title: "Deleted!",
+        text: "Customer deleted successfully.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("DELETE ERROR:", err.response?.data || err);
+
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to delete customer.",
+        icon: "error",
+      });
+    }
+  };
+  const exportPDF = () => {
+    window.print();
+  };
+  return (
     <CenterLayout>
-     <style>{`
+      <style>{`
 @media print {
 
   body * {
@@ -297,244 +297,241 @@ export default function ManageEvent() {
   }
 }
 `}</style>
-    <div id="printable-dashboard">
-  <div className="w-full max-w-full p-4 sm:p-6 bg-stone-50 box-border">
-        
-        {/* Dashboard Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
-          <div>
-            <h1 className="text-2xl font-bold text-stone-900">
-              መንሱር ሱልጣን ዱቄት ፋብሪካ / Customer Dashboard
-            </h1>
-            <p className="text-sm text-stone-600 mt-1">
-              Track sales, recent customer registrations, and outstanding balances.
-            </p>
-          </div>
+      <div id="printable-dashboard">
+        <div className="w-full max-w-full p-4 sm:p-6 bg-stone-50 box-border">
 
-                 <button
-    onClick={exportPDF}
-    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition"
-  >
-    📄 Export PDF
-  </button>
-          
-          <button
-            onClick={() => navigate("/newevent")}
-            style={{ backgroundColor: "#5516DA" }}
-            className="flex items-center justify-center gap-2 hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer shrink-0"
-          >
-            <MdAdd className="text-xl" />
-            <span>Add Customer / ደንበኛ ጨምር</span>
-          </button>
-        </div>
-
-        {/* Dashboard Key Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 w-full">
-          {/* Card 1: Total Customers */}
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
+          {/* Dashboard Top Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
             <div>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                Total Customers
+              <h1 className="text-2xl font-bold text-stone-900">
+                መንሱር ሱልጣን ዱቄት ፋብሪካ / Customer Dashboard
+              </h1>
+              <p className="text-sm text-stone-600 mt-1">
+                Track sales, recent customer registrations, and outstanding balances.
               </p>
-              <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
-                {totalCustomersCount}
-              </h3>
             </div>
-            <div className="p-3 bg-purple-50 text-[#5516DA] rounded-lg">
-              <MdPeople className="text-2xl" />
-            </div>
-          </div>
 
-          {/* Card 2: Total Purchases */}
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                Total Purchases
-              </p>
-              <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
-                ETB {totalPurchases.toLocaleString()}
-              </h3>
-            </div>
-            <div className="p-3 bg-purple-100 text-[#5516DA] rounded-lg">
-              <MdAttachMoney className="text-2xl" />
-            </div>
-          </div>
-
-          {/* Card 3: Total Paid */}
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                Total Paid
-              </p>
-              <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">
-                ETB {totalPaid.toLocaleString()}
-              </h3>
-            </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-              <MdAccountBalanceWallet className="text-2xl" />
-            </div>
-          </div>
-
-          {/* Card 4: Remaining Balance */}
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                Remaining Balance
-              </p>
-              <h3 className="text-2xl font-extrabold text-red-600 mt-1">
-                ETB {remainingBalance.toLocaleString()}
-              </h3>
-            </div>
-            <div className="p-3 bg-red-50 text-red-600 rounded-lg">
-              <MdAccountBalanceWallet className="text-2xl" />
-            </div>
-          </div>
-        </div>
-
-        {/* Search Bar & Filter Controls */}
-        <div className="bg-white p-4 rounded-xl shadow-xs border border-stone-200 mb-6 w-full flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Search Input */}
-          <div className="relative w-full md:w-1/2">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xl" />
-            <input
-              type="text"
-              placeholder="Search by name, phone, or receipt number..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
-            />
-          </div>
-
-          {/* Filter Tabs: All, Has Balance, Fully Paid */}
-          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg w-full md:w-auto shrink-0">
             <button
-              onClick={() => setStatusFilter("all")}
-              style={statusFilter === "all" ? { backgroundColor: "#5516DA" } : {}}
-              className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                statusFilter === "all"
-                  ? "text-white shadow-xs"
-                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
-              }`}
+              onClick={exportPDF}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition"
             >
-              All ({customers.length})
+              📄 Export PDF
             </button>
+
             <button
-              onClick={() => setStatusFilter("balance")}
-              style={statusFilter === "balance" ? { backgroundColor: "#5516DA" } : {}}
-              className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                statusFilter === "balance"
-                  ? "text-white shadow-xs"
-                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
-              }`}
+              onClick={() => navigate("/newevent")}
+              style={{ backgroundColor: "#5516DA" }}
+              className="flex items-center justify-center gap-2 hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer shrink-0"
             >
-              Has Balance / ዕዳ ያለበት  
-            </button>
-            <button
-              onClick={() => setStatusFilter("paid")}
-              style={statusFilter === "paid" ? { backgroundColor: "#5516DA" } : {}}
-              className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                statusFilter === "paid"
-                  ? "text-white shadow-xs"
-                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
-              }`}
-            >
-              Fully Paid / የተከፈለ 
+              <MdAdd className="text-xl" />
+              <span>Add Customer / ደንበኛ ጨምር</span>
             </button>
           </div>
-        </div>
 
-        {/* Recent Customers Table */}
-        <div className="bg-white rounded-xl shadow-xs border border-stone-200 overflow-hidden w-full">
-          <div className="p-4 border-b border-stone-200 bg-stone-100 flex items-center justify-between">
-            <h2 className="font-semibold text-stone-800">Recent Transactions</h2>
-            <span className="text-xs font-medium text-stone-500">
-              Showing {filteredCustomers.length} entries
-            </span>
+          {/* Dashboard Key Metrics Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 w-full">
+            {/* Card 1: Total Customers */}
+            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  Total Customers
+                </p>
+                <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
+                  {totalCustomersCount}
+                </h3>
+              </div>
+              <div className="p-3 bg-purple-50 text-[#5516DA] rounded-lg">
+                <MdPeople className="text-2xl" />
+              </div>
+            </div>
+
+            {/* Card 2: Total Purchases */}
+            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  Total Purchases
+                </p>
+                <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
+                  ETB {totalPurchases.toLocaleString()}
+                </h3>
+              </div>
+              <div className="p-3 bg-purple-100 text-[#5516DA] rounded-lg">
+                <MdAttachMoney className="text-2xl" />
+              </div>
+            </div>
+
+            {/* Card 3: Total Paid */}
+            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  Total Paid
+                </p>
+                <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">
+                  ETB {totalPaid.toLocaleString()}
+                </h3>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                <MdAccountBalanceWallet className="text-2xl" />
+              </div>
+            </div>
+
+            {/* Card 4: Remaining Balance */}
+            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  Remaining Balance
+                </p>
+                <h3 className="text-2xl font-extrabold text-red-600 mt-1">
+                  ETB {remainingBalance.toLocaleString()}
+                </h3>
+              </div>
+              <div className="p-3 bg-red-50 text-red-600 rounded-lg">
+                <MdAccountBalanceWallet className="text-2xl" />
+              </div>
+            </div>
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left text-sm text-stone-600">
-              <thead className="bg-stone-200 text-stone-800 font-semibold border-b border-stone-300">
-                <tr>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Receipt No</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Customer Name</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Phone Number</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Date</th>
-                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {filteredCustomers.length > 0 ? (
-                  currentCustomers.map((customer, index) => {
-                      const latestLedger = customer.ledgers?.[0];
-                    return (
-                      <tr key={customer.id || index} className="hover:bg-purple-50/40 transition-colors">
-                        <td className="py-3.5 px-4 font-medium text-stone-900 whitespace-nowrap">
-                          {latestLedger?.receiptNo || index + 1}
-                         </td>
-                        <td className="py-3.5 px-4 font-medium text-stone-800 whitespace-nowrap">
-                          {customer.fullName}
-                        </td>
-                        <td className="py-3.5 px-4 text-stone-600 whitespace-nowrap">
-                          {customer.phone}
-                        </td>
-                       <td className="py-3.5 px-4 text-stone-500 whitespace-nowrap">
-                           {latestLedger?.date
-                         ? new Date(latestLedger.date).toLocaleDateString()
-                          : "-"
-  }
-</td>
-                     <td className="py-3.5 px-4 text-center whitespace-nowrap">
-  <div className="flex items-center justify-center gap-2">
-    <button
-      onClick={() => handleViewCustomer(customer)}
-      style={{ backgroundColor: "#5516DA" }}
-      className="inline-flex items-center gap-1 text-white px-3 py-1.5 rounded-md"
-    >
-      <MdVisibility />
-      <span>View</span>
-    </button>
+          {/* Search Bar & Filter Controls */}
+          <div className="bg-white p-4 rounded-xl shadow-xs border border-stone-200 mb-6 w-full flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Search Input */}
+            <div className="relative w-full md:w-1/2">
+              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xl" />
+              <input
+                type="text"
+                placeholder="Search by name, phone, or receipt number..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
+              />
+            </div>
 
-    {isSuperAdmin && (
-  <button
-    onClick={() => handleDelete(customer.id)}
-    className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md"
-  >
-    <MdDelete />
-    <span>Delete</span>
-  </button>
-)}
-  </div>
-</td>
-                      </tr>
-                    );
-                  })
-                ) : (
+            {/* Filter Tabs: All, Has Balance, Fully Paid */}
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg w-full md:w-auto shrink-0">
+              <button
+                onClick={() => setStatusFilter("all")}
+                style={statusFilter === "all" ? { backgroundColor: "#5516DA" } : {}}
+                className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${statusFilter === "all"
+                    ? "text-white shadow-xs"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+                  }`}
+              >
+                All ({customers.length})
+              </button>
+              <button
+                onClick={() => setStatusFilter("balance")}
+                style={statusFilter === "balance" ? { backgroundColor: "#5516DA" } : {}}
+                className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${statusFilter === "balance"
+                    ? "text-white shadow-xs"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+                  }`}
+              >
+                Has Balance / ዕዳ ያለበት
+              </button>
+              <button
+                onClick={() => setStatusFilter("paid")}
+                style={statusFilter === "paid" ? { backgroundColor: "#5516DA" } : {}}
+                className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${statusFilter === "paid"
+                    ? "text-white shadow-xs"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+                  }`}
+              >
+                Fully Paid / የተከፈለ
+              </button>
+            </div>
+          </div>
+
+          {/* Recent Customers Table */}
+          <div className="bg-white rounded-xl shadow-xs border border-stone-200 overflow-hidden w-full">
+            <div className="p-4 border-b border-stone-200 bg-stone-100 flex items-center justify-between">
+              <h2 className="font-semibold text-stone-800">Recent Transactions</h2>
+              <span className="text-xs font-medium text-stone-500">
+                Showing {filteredCustomers.length} entries
+              </span>
+            </div>
+
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left text-sm text-stone-600">
+                <thead className="bg-stone-200 text-stone-800 font-semibold border-b border-stone-300">
                   <tr>
-                    <td colSpan="5" className="py-8 text-center text-stone-400">
-                      No matching records found / ምንም መረጃ አልተገኘም
-                    </td>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Receipt No</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Customer Name</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Phone Number</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Date</th>
+                    <th className="py-3.5 px-4 text-center whitespace-nowrap">Action</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-            <div className="flex justify-between items-center px-4 py-3 border-t border-stone-200">
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {filteredCustomers.length > 0 ? (
+                    currentCustomers.map((customer, index) => {
+                      const latestLedger = customer.ledgers?.[0];
+                      return (
+                        <tr key={customer.id || index} className="hover:bg-purple-50/40 transition-colors">
+                          <td className="py-3.5 px-4 font-medium text-stone-900 whitespace-nowrap">
+                            {latestLedger?.receiptNo || index + 1}
+                          </td>
+                          <td className="py-3.5 px-4 font-medium text-stone-800 whitespace-nowrap">
+                            {customer.fullName}
+                          </td>
+                          <td className="py-3.5 px-4 text-stone-600 whitespace-nowrap">
+                            {customer.phone}
+                          </td>
+                          <td className="py-3.5 px-4 text-stone-500 whitespace-nowrap">
+                            {latestLedger?.date
+                              ? new Date(latestLedger.date).toLocaleDateString()
+                              : "-"
+                            }
+                          </td>
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleViewCustomer(customer)}
+                                style={{ backgroundColor: "#5516DA" }}
+                                className="inline-flex items-center gap-1 text-white px-3 py-1.5 rounded-md"
+                              >
+                                <MdVisibility />
+                                <span>View</span>
+                              </button>
 
-  {/* Showing text */}
-  <p className="text-xs text-stone-500">
-    Showing {indexOfFirstCustomer + 1} -{" "}
-    {Math.min(indexOfLastCustomer, filteredCustomers.length)} of{" "}
-    {filteredCustomers.length} customers
-  </p>
+                              {isSuperAdmin && (
+                                <button
+                                  onClick={() => handleDelete(customer.id)}
+                                  className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md"
+                                >
+                                  <MdDelete />
+                                  <span>Delete</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="py-8 text-center text-stone-400">
+                        No matching records found / ምንም መረጃ አልተገኘም
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <div className="flex justify-between items-center px-4 py-3 border-t border-stone-200">
+
+                {/* Showing text */}
+                <p className="text-xs text-stone-500">
+                  Showing {indexOfFirstCustomer + 1} -{" "}
+                  {Math.min(indexOfLastCustomer, filteredCustomers.length)} of{" "}
+                  {filteredCustomers.length} customers
+                </p>
 
 
-  {/* Pagination */}
-  <div className="flex items-center gap-1">
+                {/* Pagination */}
+                <div className="flex items-center gap-1">
 
-    <button
-      disabled={currentPage === 1}
-      onClick={() => setCurrentPage(currentPage - 1)}
-      className="
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="
         px-2.5 
         py-1 
         text-xs 
@@ -545,37 +542,36 @@ export default function ManageEvent() {
         hover:bg-stone-100
         disabled:opacity-40
       "
-    >
-      Prev
-    </button>
+                  >
+                    Prev
+                  </button>
 
 
-    {Array.from({ length: totalPages }, (_, index) => (
-      <button
-        key={index}
-        onClick={() => setCurrentPage(index + 1)}
-        className={`
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentPage(index + 1)}
+                      className={`
           px-2.5 
           py-1 
           text-xs 
           rounded-md
           transition
-          ${
-            currentPage === index + 1
-              ? "bg-[#5516DA] text-white"
-              : "border border-stone-300 text-stone-600 hover:bg-stone-100"
-          }
+          ${currentPage === index + 1
+                          ? "bg-[#5516DA] text-white"
+                          : "border border-stone-300 text-stone-600 hover:bg-stone-100"
+                        }
         `}
-      >
-        {index + 1}
-      </button>
-    ))}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
 
 
-    <button
-      disabled={currentPage === totalPages}
-      onClick={() => setCurrentPage(currentPage + 1)}
-      className="
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="
         px-2.5 
         py-1 
         text-xs
@@ -586,17 +582,17 @@ export default function ManageEvent() {
         hover:bg-stone-100
         disabled:opacity-40
       "
-    >
-      Next
-    </button>
+                  >
+                    Next
+                  </button>
 
-  </div>
+                </div>
 
-</div>
+              </div>
+            </div>
           </div>
-        </div>
 
-</div>
+        </div>
       </div>
     </CenterLayout>
   );
