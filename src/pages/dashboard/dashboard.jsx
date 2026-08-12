@@ -1,602 +1,243 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
+import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
+import { toEthiopian } from "ethiopian-date";
 import api from "../../api/axios";
-import Swal from "sweetalert2";
-
-import {
-  MdAdd,
-  MdSearch,
-  MdVisibility,
-  MdPeople,
-  MdAttachMoney,
-  MdAccountBalanceWallet,
-} from "react-icons/md";
-import { MdDelete } from "react-icons/md";
 
 
 
 export default function ManageEvent() {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // Options: "all", "balance", "paid";
-  const [currentPage, setCurrentPage] = useState(1);
-
   const user = JSON.parse(localStorage.getItem("user"));
   const isSuperAdmin = user?.role === "SUPERADMIN";
-  const customersPerPage = 10;
+
+  const formatEthiopianDate = (date) => {
+  if (!date) return "-";
+
+  const dateString = String(date).split("T")[0];
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) return "-";
+
+  const [ethYear, ethMonth, ethDay] = toEthiopian(year, month, day);
+
+  return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(
+    ethDay
+  ).padStart(2, "0")}`;
+};
+  const [customers, setCustomers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
 
+    const customerList = customers.map((customer) => ({
+  id: customer.id,
+  customerName: customer.fullName || "-",
+  phoneNumber: customer.phone || "-",
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
+  // Receipt number comes from Member table
+  receiptNumber: customer.receiptNo || "-",
 
+  // Registration date comes from Member table
+  date: formatEthiopianDate(customer.createdAt),
+}));
+  // Filter customers by name, phone, or receipt number
+   const filteredCustomers = customerList.filter((c) => {
+  const search = searchTerm.toLowerCase();
 
-  const fetchMembers = async () => {
-
-    try {
-
-      const res = await api.get("/members");
-
-      console.log("MEMBERS RESPONSE:", res.data);
-      console.log("IS ARRAY:", Array.isArray(res.data));
-
-
-      setCustomers(
-        Array.isArray(res.data)
-          ? res.data
-          : []
-      );
-
-
-    } catch (err) {
-
-      console.log(
-        err.response?.data || err.message
-      );
-
-      setCustomers([]);
-
-    }
-
-  };
-
-  // Dashboard calculations
-
-  const totalCustomersCount = customers.length;
-
-  // Status breakdown counts
-  const countPaid = customers.filter((c) => Number(c.remainingBalance || 0) <= 0).length;
-  const countBalance = customers.filter((c) => Number(c.remainingBalance || 0) > 0).length;
-
-
-
-
-  const totalPurchases = customers.reduce(
-    (sum, customer) => {
-
-      const ledgers = Array.isArray(customer.ledgers)
-        ? customer.ledgers
-        : [];
-
-
-      return (
-        sum +
-        ledgers.reduce(
-          (ledgerSum, ledger) =>
-            ledgerSum + Number(ledger.totalPrice || 0),
-          0
-        )
-      );
-
-    },
-    0
+  return (
+    String(c.customerName).toLowerCase().includes(search) ||
+    String(c.phoneNumber).toLowerCase().includes(search) ||
+    String(c.receiptNumber).toLowerCase().includes(search)
   );
+});
 
-
-
-
-  const totalPaid = customers.reduce(
-    (sum, customer) => {
-
-      const ledgers = Array.isArray(customer.ledgers)
-        ? customer.ledgers
-        : [];
-
-
-      return (
-        sum +
-        ledgers.reduce(
-          (ledgerSum, ledger) =>
-            ledgerSum + Number(ledger.paidAmount || 0),
-          0
-        )
-      );
-
-    },
-    0
-  );
-
-
-
-
-  const remainingBalance = customers.reduce(
-    (sum, customer) => {
-
-      const ledgers = Array.isArray(customer.ledgers)
-        ? customer.ledgers
-        : [];
-
-
-      return (
-        sum +
-        ledgers.reduce(
-          (ledgerSum, ledger) =>
-            ledgerSum + Number(ledger.remaining || 0),
-          0
-        )
-      );
-
-    },
-    0
-  );
-
-
-
-  // Search
-
-  const filteredCustomers = customers
-    .filter((customer) => {
-
-      // Calculate customer remaining balance
-      const balance = (customer.ledgers || []).reduce(
-        (sum, ledger) =>
-          sum + Number(ledger.remaining || 0),
-        0
-      );
-
-
-      // Status filter
-      if (statusFilter === "balance" && balance <= 0) {
-        return false;
-      }
-
-
-      if (statusFilter === "paid" && balance > 0) {
-        return false;
-      }
-
-
-      // Search filter
-      const search = searchTerm.toLowerCase();
-
-
-      return (
-        customer.fullName
-          ?.toLowerCase()
-          .includes(search)
-
-        ||
-
-        customer.phone
-          ?.includes(searchTerm)
-
-        ||
-
-        customer.ledgers?.some((ledger) =>
-          ledger.receiptNo
-            ?.toLowerCase()
-            .includes(search)
-        )
-
-        ||
-
-        customer.ledgers?.some((ledger) =>
-          ledger.date
-            ?.toString()
-            .includes(searchTerm)
-        )
-      );
-
-    })
-    .sort(
-      (a, b) =>
-        a.fullName.localeCompare(b.fullName)
-    );
-
-
-  const indexOfLastCustomer = currentPage * customersPerPage;
-  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
-
-  const currentCustomers = filteredCustomers.slice(
-    indexOfFirstCustomer,
-    indexOfLastCustomer
-  );
-
-  const totalPages = Math.ceil(
-    filteredCustomers.length / customersPerPage
-  );
-
-  // Navigation handler for View button
+  // Function to navigate to the view route (/usermanagement)
   const handleViewCustomer = (customer) => {
     navigate(`/usermanagement/${customer.id}`);
   };
 
- const handleDelete = async (id) => {
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: "This customer will be permanently deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#5516DA",
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-  });
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
-  if (!result.isConfirmed) return;
-
-  try {
-    await api.delete(`/members/${id}`);
-
-    // Remove the deleted customer immediately from the frontend
-    setCustomers((prevCustomers) =>
-      prevCustomers.filter((customer) => customer.id !== id)
-    );
-
-    Swal.fire({
-      title: "Deleted!",
-      text: "Customer deleted successfully.",
-      icon: "success",
-      timer: 2000,
-      showConfirmButton: false,
-    });
-
-  } catch (err) {
-    console.error("DELETE ERROR:", err.response?.data || err);
-
-    Swal.fire({
-      title: "Error!",
-      text: err.response?.data?.message || "Failed to delete customer.",
-      icon: "error",
-    });
-  }
-};
-  const exportPDF = () => {
-    window.print();
+  const fetchCustomers = async () => {
+    try {
+      const res = await api.get("/members");
+      setCustomers(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
-  return (
-    <CenterLayout>
-      <style>{`
-@media print {
 
-  body * {
-    visibility: hidden;
-  }
 
-  #printable-dashboard,
-  #printable-dashboard * {
-    visibility: visible;
-  }
+ return (
+  <CenterLayout>
+    <div className="w-full min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6">
 
-  #printable-dashboard {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: white;
-    padding: 10px;
-  }
+      {/* Page Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
 
-  .no-print {
-    display: none !important;
-  }
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 break-words">
+            Recently Registered Customers / በቅርብ የተመዘገቡ ደንበኞች
+          </h1>
 
-  @page {
-    size: A4 landscape;
-    margin: 8mm;
-  }
-}
-`}</style>
-      <div id="printable-dashboard">
-        <div className="w-full max-w-full p-4 sm:p-6 bg-stone-50 box-border">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            View customer history, payment statuses, and detailed receipts.
+          </p>
+        </div>
 
-          {/* Dashboard Top Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 w-full">
-            <div>
-              <h1 className="text-2xl font-bold text-stone-900">
-                መንሱር ሱልጣን ዱቄት ፋብሪካ / Customer Dashboard
-              </h1>
-              <p className="text-sm text-stone-600 mt-1">
-                Track sales, recent customer registrations, and outstanding balances.
-              </p>
-            </div>
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto shrink-0">
 
+          <button
+            onClick={() => navigate("/newevent")}
+            style={{ backgroundColor: "#5516DA" }}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 hover:opacity-90 text-white font-medium px-4 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer"
+          >
+            <MdAdd className="text-xl" />
+            <span>Add Customer / ደንበኛ ጨምር</span>
+          </button>
+
+          {isSuperAdmin && (
             <button
-              onClick={exportPDF}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition"
+              onClick={() => navigate("/create-admin")}
+              className="w-full sm:w-auto bg-[#5516DA] hover:opacity-90 text-white px-5 py-2.5 rounded-lg transition cursor-pointer"
             >
-              📄 Export PDF
+              Add Admin
             </button>
-
-            <button
-              onClick={() => navigate("/newevent")}
-              style={{ backgroundColor: "#5516DA" }}
-              className="flex items-center justify-center gap-2 hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-lg shadow-xs transition-all duration-200 cursor-pointer shrink-0"
-            >
-              <MdAdd className="text-xl" />
-              <span>Add Customer / ደንበኛ ጨምር</span>
-            </button>
-          </div>
-
-          {/* Dashboard Key Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 w-full">
-            {/* Card 1: Total Customers */}
-            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                  Total Customers
-                </p>
-                <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
-                  {totalCustomersCount}
-                </h3>
-              </div>
-              <div className="p-3 bg-purple-50 text-[#5516DA] rounded-lg">
-                <MdPeople className="text-2xl" />
-              </div>
-            </div>
-
-            {/* Card 2: Total Purchases */}
-            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                  Total Purchases
-                </p>
-                <h3 className="text-2xl font-extrabold text-stone-800 mt-1">
-                  ETB {totalPurchases.toLocaleString()}
-                </h3>
-              </div>
-              <div className="p-3 bg-purple-100 text-[#5516DA] rounded-lg">
-                <MdAttachMoney className="text-2xl" />
-              </div>
-            </div>
-
-            {/* Card 3: Total Paid */}
-            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                  Total Paid
-                </p>
-                <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">
-                  ETB {totalPaid.toLocaleString()}
-                </h3>
-              </div>
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                <MdAccountBalanceWallet className="text-2xl" />
-              </div>
-            </div>
-
-            {/* Card 4: Remaining Balance */}
-            <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-xs flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                  Remaining Balance
-                </p>
-                <h3 className="text-2xl font-extrabold text-red-600 mt-1">
-                  ETB {remainingBalance.toLocaleString()}
-                </h3>
-              </div>
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg">
-                <MdAccountBalanceWallet className="text-2xl" />
-              </div>
-            </div>
-          </div>
-
-          {/* Search Bar & Filter Controls */}
-          <div className="bg-white p-4 rounded-xl shadow-xs border border-stone-200 mb-6 w-full flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* Search Input */}
-            <div className="relative w-full md:w-1/2">
-              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xl" />
-              <input
-                type="text"
-                placeholder="Search by name, phone, or receipt number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
-              />
-            </div>
-
-            {/* Filter Tabs: All, Has Balance, Fully Paid */}
-            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg w-full md:w-auto shrink-0">
-              <button
-                onClick={() => setStatusFilter("all")}
-                style={statusFilter === "all" ? { backgroundColor: "#5516DA" } : {}}
-                className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${statusFilter === "all"
-                    ? "text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
-                  }`}
-              >
-                All ({customers.length})
-              </button>
-              <button
-                onClick={() => setStatusFilter("balance")}
-                style={statusFilter === "balance" ? { backgroundColor: "#5516DA" } : {}}
-                className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${statusFilter === "balance"
-                    ? "text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
-                  }`}
-              >
-                Has Balance / ዕዳ ያለበት
-              </button>
-              <button
-                onClick={() => setStatusFilter("paid")}
-                style={statusFilter === "paid" ? { backgroundColor: "#5516DA" } : {}}
-                className={`flex-1 md:flex-none px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${statusFilter === "paid"
-                    ? "text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
-                  }`}
-              >
-                Fully Paid / የተከፈለ
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Customers Table */}
-          <div className="bg-white rounded-xl shadow-xs border border-stone-200 overflow-hidden w-full">
-            <div className="p-4 border-b border-stone-200 bg-stone-100 flex items-center justify-between">
-              <h2 className="font-semibold text-stone-800">Recent Transactions</h2>
-              <span className="text-xs font-medium text-stone-500">
-                Showing {filteredCustomers.length} entries
-              </span>
-            </div>
-
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-left text-sm text-stone-600">
-                <thead className="bg-stone-200 text-stone-800 font-semibold border-b border-stone-300">
-                  <tr>
-                    <th className="py-3.5 px-4 whitespace-nowrap">Receipt No</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">Customer Name</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">Phone Number</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">Date</th>
-                    <th className="py-3.5 px-4 text-center whitespace-nowrap">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {filteredCustomers.length > 0 ? (
-                    currentCustomers.map((customer, index) => {
-                      const latestLedger = customer.ledgers?.[0];
-                      return (
-                        <tr key={customer.id || index} className="hover:bg-purple-50/40 transition-colors">
-                          <td className="py-3.5 px-4 font-medium text-stone-900 whitespace-nowrap">
-                            {latestLedger?.receiptNo || index + 1}
-                          </td>
-                          <td className="py-3.5 px-4 font-medium text-stone-800 whitespace-nowrap">
-                            {customer.fullName}
-                          </td>
-                          <td className="py-3.5 px-4 text-stone-600 whitespace-nowrap">
-                            {customer.phone}
-                          </td>
-                          <td className="py-3.5 px-4 text-stone-500 whitespace-nowrap">
-                            {latestLedger?.date
-                              ? new Date(latestLedger.date).toLocaleDateString()
-                              : "-"
-                            }
-                          </td>
-                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => handleViewCustomer(customer)}
-                                style={{ backgroundColor: "#5516DA" }}
-                                className="inline-flex items-center gap-1 text-white px-3 py-1.5 rounded-md"
-                              >
-                                <MdVisibility />
-                                <span>View</span>
-                              </button>
-
-                              {isSuperAdmin && (
-                                <button
-                                  onClick={() => handleDelete(customer.id)}
-                                  className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md"
-                                >
-                                  <MdDelete />
-                                  <span>Delete</span>
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="py-8 text-center text-stone-400">
-                        No matching records found / ምንም መረጃ አልተገኘም
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div className="flex justify-between items-center px-4 py-3 border-t border-stone-200">
-
-                {/* Showing text */}
-                <p className="text-xs text-stone-500">
-                  Showing {indexOfFirstCustomer + 1} -{" "}
-                  {Math.min(indexOfLastCustomer, filteredCustomers.length)} of{" "}
-                  {filteredCustomers.length} customers
-                </p>
-
-
-                {/* Pagination */}
-                <div className="flex items-center gap-1">
-
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    className="
-        px-2.5 
-        py-1 
-        text-xs 
-        rounded-md
-        border
-        border-stone-300
-        text-stone-600
-        hover:bg-stone-100
-        disabled:opacity-40
-      "
-                  >
-                    Prev
-                  </button>
-
-
-                  {Array.from({ length: totalPages }, (_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentPage(index + 1)}
-                      className={`
-          px-2.5 
-          py-1 
-          text-xs 
-          rounded-md
-          transition
-          ${currentPage === index + 1
-                          ? "bg-[#5516DA] text-white"
-                          : "border border-stone-300 text-stone-600 hover:bg-stone-100"
-                        }
-        `}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
-
-
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    className="
-        px-2.5 
-        py-1 
-        text-xs
-        rounded-md
-        border
-        border-stone-300
-        text-stone-600
-        hover:bg-stone-100
-        disabled:opacity-40
-      "
-                  >
-                    Next
-                  </button>
-
-                </div>
-
-              </div>
-            </div>
-          </div>
+          )}
 
         </div>
       </div>
-    </CenterLayout>
-  );
+
+
+      {/* Controls: Search Bar */}
+      <div className="bg-white p-3 sm:p-4 rounded-xl shadow-xs border border-gray-200 mb-6 w-full">
+
+        <div className="relative w-full max-w-md">
+
+          <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+
+          <input
+            type="text"
+            placeholder="Search by name, phone, or receipt number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 sm:py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5516DA] focus:bg-white transition-all"
+          />
+
+        </div>
+      </div>
+
+
+      {/* Customer Data Table */}
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden w-full">
+
+        {/* Horizontal scrolling on mobile */}
+        <div className="w-full overflow-x-auto">
+
+          <table className="min-w-[700px] w-full text-left text-sm text-gray-600">
+
+            <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
+
+              <tr>
+
+                <th className="py-3 px-3 sm:py-3.5 sm:px-4 whitespace-nowrap">
+                  Receipt No
+                </th>
+
+                <th className="py-3 px-3 sm:py-3.5 sm:px-4 whitespace-nowrap">
+                  Customer Name
+                </th>
+
+                <th className="py-3 px-3 sm:py-3.5 sm:px-4 whitespace-nowrap">
+                  Phone Number
+                </th>
+
+                <th className="py-3 px-3 sm:py-3.5 sm:px-4 whitespace-nowrap">
+                  Date
+                </th>
+
+                <th className="py-3 px-3 sm:py-3.5 sm:px-4 text-center whitespace-nowrap">
+                  Action
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody className="divide-y divide-gray-100">
+
+              {filteredCustomers.length > 0 ? (
+
+                filteredCustomers.map((customer) => {
+
+                  return (
+                    <tr
+                      key={customer.id}
+                      className="hover:bg-purple-50/40 transition-colors"
+                    >
+
+                      <td className="py-3 px-3 sm:py-3.5 sm:px-4 font-medium text-gray-900 whitespace-nowrap">
+                        {customer.receiptNumber}
+                      </td>
+
+                      <td className="py-3 px-3 sm:py-3.5 sm:px-4 font-medium text-gray-800 whitespace-nowrap">
+                        {customer.customerName}
+                      </td>
+
+                      <td className="py-3 px-3 sm:py-3.5 sm:px-4 text-gray-600 whitespace-nowrap">
+                        {customer.phoneNumber}
+                      </td>
+
+                      <td className="py-3 px-3 sm:py-3.5 sm:px-4 text-gray-500 whitespace-nowrap">
+                        {customer.date}
+                      </td>
+
+                      <td className="py-3 px-3 sm:py-3.5 sm:px-4 text-center whitespace-nowrap">
+
+                        <button
+                          onClick={() => handleViewCustomer(customer)}
+                          style={{ backgroundColor: "#5516DA" }}
+                          className="inline-flex items-center justify-center gap-1 hover:opacity-90 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-md transition-colors text-xs cursor-pointer shadow-xs"
+                        >
+                          <MdVisibility className="text-base" />
+                          <span>View / ዝርዝር</span>
+                        </button>
+
+                      </td>
+
+                    </tr>
+                  );
+
+                })
+
+              ) : (
+
+                <tr>
+                  <td
+                    colSpan="5"
+                    className="py-8 px-4 text-center text-gray-400"
+                  >
+                    No matching records found / ምንም መረጃ አልተገኘም
+                  </td>
+                </tr>
+
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+      </div>
+
+    </div>
+  </CenterLayout>
+);
 }
