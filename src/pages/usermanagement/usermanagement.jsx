@@ -562,14 +562,9 @@ export default function UserManagement() {
       .split("-")
       .map(Number);
 
-    const gregorianPaymentDate = toGregorian(
-      ethYear,
-      ethMonth,
-      ethDay
-    );
+     
 
-    const paymentDate = `${gregorianPaymentDate[0]}-${String(gregorianPaymentDate[1]).padStart(2, "0")}-${String(gregorianPaymentDate[2]).padStart(2, "0")}`;
-
+    const paymentDate = paymentFormData.date;
 
     const paymentPayload = {
 
