@@ -8,49 +8,32 @@ import { toGregorian, toEthiopian } from "ethiopian-date";
 export default function UserManagement() {
   const navigate = useNavigate();
   const { id } = useParams();
-
-  const getTodayEthiopian = () => {
-    const today = new Date();
-    const [year, month, day] = toEthiopian(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      today.getDate()
-    );
-    return { year, month, day };
-  };
-
-  // Convert Gregorian date (YYYY-MM-DD or ISO) -> Ethiopian string (YYYY-MM-DD)
-  const formatEthiopianDate = (date) => {
-    if (!date) return "";
-
-    // If already an Ethiopian date object
-    if (typeof date === "object" && date.year && date.month && date.day) {
-      return `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
-    }
-
-    // If string in YYYY-MM-DD format
-    const dateString = String(date).split("T")[0];
-    const [year, month, day] = dateString.split("-").map(Number);
-    if (!year || !month || !day) return "";
-
-    const ethDate = toEthiopian(year, month, day);
-    return `${ethDate.year}-${String(ethDate.month).padStart(2, "0")}-${String(ethDate.day).padStart(2, "0")}`;
-  };
+  console.log("CUSTOMER ID:", id);
 
   // State setup
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [, setError] = useState(null);
+  const [error, setError] = useState(null);
+
   const [selectedCustomerId, setSelectedCustomerId] = useState(id || null);
 
   // Modal State for adding/editing purchase
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPurchaseId, setEditingPurchaseId] = useState(null);
+  const today = new Date();
 
-  const todayEth = getTodayEthiopian();
+  const [ethYear, ethMonth, ethDay] = toEthiopian(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate()
+  );
 
   const [formData, setFormData] = useState({
-    date: todayEth,
+    date: {
+      year: ethYear,
+      month: ethMonth,
+      day: ethDay
+    },
     receiptNumber: "",
     bankPaymentEntry: "",
     itemType: "",
@@ -59,76 +42,143 @@ export default function UserManagement() {
     paidAmount: "",
   });
 
-  // Modal State for adding individual payments
+  // Modal State for adding individual payments (Payment Calendar/History)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState(null);
 
+  const [todayEthYear, todayEthMonth, todayEthDay] = toEthiopian(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate()
+  );
+
   const [paymentFormData, setPaymentFormData] = useState({
-    date: todayEth,
+    date: {
+      year: todayEthYear,
+      month: todayEthMonth,
+      day: todayEthDay,
+    },
     amount: "",
     bankPaymentEntry: "",
   });
 
-  const [receiptStatus, setReceiptStatus] = useState("");
-  const [, setReceiptAvailable] = useState(true);
-
+  // Keep selectedCustomerId in sync if route param changes
   useEffect(() => {
-    if (id) setSelectedCustomerId(id);
+    if (id) {
+      setSelectedCustomerId(id);
+    }
   }, [id]);
 
+  // 1. FETCH CUSTOMERS FROM BACKEND ON MOUNT
   useEffect(() => {
-    if (id) fetchCustomers();
-  }, [id]);
 
+    if (id) {
+      fetchCustomers();
+    }
+
+  }, [id]);
   const fetchCustomers = async () => {
+
     try {
       setLoading(true);
+
       const response = await api.get(`/members/${id}`);
+
       const customer = response.data;
 
       const formattedCustomer = {
         id: customer.id,
+
         customerName: customer.fullName,
+
         phoneNumber: customer.phone,
-        purchases:
-          customer.ledgers?.map((ledger) => {
-            const totalPrice = Number(ledger.totalPrice || 0);
 
-            const payments = (ledger.payments || []).map((pay) => ({
-              ...pay,
-              date: formatEthiopianDate(pay.date),
-            }));
+        purchases: customer.ledgers?.map((ledger) => {
+          const gDate = new Date(ledger.date);
 
-            const paidAmount = payments.reduce(
-              (sum, p) => sum + Number(p.amount || 0),
-              Number(ledger.paidAmount || 0)
-            );
+          const [ethYear, ethMonth, ethDay] = toEthiopian(
+            gDate.getFullYear(),
+            gDate.getMonth() + 1,
+            gDate.getDate()
+          );
+
+          const totalPrice = Number(ledger.totalPrice || 0);
+
+          const payments = (ledger.payments || []).map((pay) => {
+            const paymentDate = new Date(pay.date);
+
+            const [paymentEthYear, paymentEthMonth, paymentEthDay] =
+              toEthiopian(
+                paymentDate.getFullYear(),
+                paymentDate.getMonth() + 1,
+                paymentDate.getDate()
+              );
 
             return {
-              id: ledger.id,
-              date: formatEthiopianDate(ledger.date),
-              receiptNumber: ledger.receiptNo,
-              bankPaymentEntry: ledger.note || "",
-              itemType: ledger.itemName || "",
-              quantity: Number(ledger.quantity || 0),
-              unitPrice: Number(ledger.unitPrice || 0),
-              totalPrice,
-              paidAmount,
-              remainingBalance: Math.max(0, totalPrice - paidAmount),
-              paymentHistory: payments,
+              id: pay.id,
+              date: `${paymentEthYear}-${String(paymentEthMonth).padStart(2, "0")}-${String(paymentEthDay).padStart(2, "0")}`,
+              amount: Number(pay.amount || 0),
+              bankPaymentEntry: pay.bankPaymentEntry || "",
             };
-          }) || [],
+          });
+          const paidAmount = payments.reduce(
+            (sum, p) => sum + Number(p.amount || 0),
+            Number(ledger.paidAmount || 0)
+          );
+
+          return {
+            id: ledger.id,
+
+            date: `${paymentEthYear}-${String(paymentEthMonth).padStart(2, "0")}-${String(paymentEthDay).padStart(2, "0")}`,
+            receiptNumber: ledger.receiptNo,
+
+            bankPaymentEntry: ledger.note || "",
+
+            itemType: ledger.itemName || "",
+
+
+            quantity:
+              Number(ledger.quantity || 0),
+
+            unitPrice:
+              Number(ledger.unitPrice || 0),
+
+            totalPrice,
+
+            paidAmount,
+
+            remainingBalance:
+              Math.max(0, totalPrice - paidAmount),
+            paymentHistory: payments
+          };
+
+        }) || []
       };
 
+
       setCustomers([formattedCustomer]);
+
       setSelectedCustomerId(customer.id);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load customer data");
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      setError(
+        "Failed to load customer data"
+      );
+
     } finally {
+
       setLoading(false);
+
     }
   };
+
+
+  const [receiptStatus, setReceiptStatus] = useState("");
+  const [receiptAvailable, setReceiptAvailable] = useState(true);
 
   const checkReceiptExists = async (receiptNo) => {
     if (!receiptNo) {
@@ -139,6 +189,7 @@ export default function UserManagement() {
 
     try {
       const res = await api.get(`/members/check-receipt/${receiptNo}`);
+
       if (res.data.exists) {
         setReceiptAvailable(false);
         setReceiptStatus("❌ This receipt number is already used.");
@@ -154,13 +205,20 @@ export default function UserManagement() {
     }
   };
 
+
+  // Dynamic calculations per customer
   const enrichedCustomers = useMemo(() => {
     return customers.map((c) => {
       const purchases = c.purchases || [];
       const totalSpent = purchases.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
       const totalPaid = purchases.reduce((sum, p) => sum + (Number(p.paidAmount) || 0), 0);
       const totalBalance = purchases.reduce((sum, p) => sum + (Number(p.remainingBalance) || 0), 0);
-      return { ...c, totalSpent, totalPaid, totalBalance };
+      return {
+        ...c,
+        totalSpent,
+        totalPaid,
+        totalBalance,
+      };
     });
   }, [customers]);
 
@@ -168,6 +226,7 @@ export default function UserManagement() {
     return enrichedCustomers.find((c) => String(c.id) === String(selectedCustomerId)) || enrichedCustomers[0];
   }, [enrichedCustomers, selectedCustomerId]);
 
+  // Group purchases by date
   const groupedPurchases = useMemo(() => {
     if (!activeCustomer || !activeCustomer.purchases) return {};
     return activeCustomer.purchases.reduce((groups, purchase) => {
@@ -178,10 +237,34 @@ export default function UserManagement() {
     }, {});
   }, [activeCustomer]);
 
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePaymentFormChange = (e) => {
+    const { name, value } = e.target;
+    setPaymentFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const openAddModal = () => {
+
+    const today = new Date();
+
+    const [year, month, day] = toEthiopian(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      today.getDate()
+    );
+
     setEditingPurchaseId(null);
+
     setFormData({
-      date: getTodayEthiopian(),
+      date: {
+        year,
+        month,
+        day
+      },
       receiptNumber: "",
       bankPaymentEntry: "",
       itemType: "",
@@ -189,23 +272,27 @@ export default function UserManagement() {
       unitPrice: "",
       paidAmount: "",
     });
+
     setIsModalOpen(true);
   };
 
-  // FIX: Parse Ethiopian date string directly to avoid Gregorian double-conversion
   const openEditModal = (purchase) => {
     setEditingPurchaseId(purchase.id);
+    const gDate = new Date(purchase.date);
 
-    let ethDateObj = getTodayEthiopian();
-    if (purchase.date) {
-      const [y, m, d] = purchase.date.split("-").map(Number);
-      if (y && m && d) {
-        ethDateObj = { year: y, month: m, day: d };
-      }
-    }
+    const [year, month, day] = toEthiopian(
+      gDate.getFullYear(),
+      gDate.getMonth() + 1,
+      gDate.getDate()
+    );
+
 
     setFormData({
-      date: ethDateObj,
+      date: {
+        year,
+        month,
+        day
+      },
       receiptNumber: purchase.receiptNumber,
       bankPaymentEntry: purchase.bankPaymentEntry || "",
       itemType: purchase.itemType,
@@ -213,52 +300,47 @@ export default function UserManagement() {
       unitPrice: purchase.unitPrice,
       paidAmount: purchase.paidAmount,
     });
-
     setIsModalOpen(true);
   };
-  
-  const handlePaymentFormChange = (e) => {
-  const { name, value } = e.target;
 
-  setPaymentFormData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
   const openPaymentModal = (purchase) => {
-  setSelectedPurchaseForPayment(purchase);
+    const today = new Date();
 
-  setPaymentFormData({
-    date: getTodayEthiopian(),
-    amount: "",
-    bankPaymentEntry: "",
-  });
+    const [year, month, day] = toEthiopian(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      today.getDate()
+    );
 
-  setIsPaymentModalOpen(true);
-};
+    setSelectedPurchaseForPayment(purchase);
 
-const handlePaymentFormChange = (e) => {
-  const { name, value } = e.target;
+    setPaymentFormData({
+      date: {
+        year,
+        month,
+        day,
+      },
+      amount: "",
+      bankPaymentEntry: "",
+    });
 
-  setPaymentFormData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
+    setIsPaymentModalOpen(true);
+  };
 
-const handlePrint = () => {
-  window.print();
-};
+  // Trigger print view
+  const handlePrint = () => {
+    window.print();
+  };
 
+  // 2. CREATE OR UPDATE PURCHASE ENTRY IN BACKEND & LOCAL STATE
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!activeCustomer) return;
-
     if (!editingPurchaseId) {
       const exists = await checkReceiptExists(formData.receiptNumber);
+
       if (exists) return;
     }
-
     const qty = parseFloat(formData.quantity) || 0;
     const price = parseFloat(formData.unitPrice) || 0;
 
@@ -268,154 +350,292 @@ const handlePrint = () => {
       formData.date.day
     );
 
-    const saveDate = `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
+
+    const saveDate =
+      `${gregorianDate[0]}-${String(gregorianDate[1]).padStart(2, "0")}-${String(gregorianDate[2]).padStart(2, "0")}`;
     const totalPrice = qty * price;
-    const paid = Math.min(parseFloat(formData.paidAmount) || 0, totalPrice);
+
+    const paid = Math.min(
+      parseFloat(formData.paidAmount) || 0,
+      totalPrice
+    );
+    const remainingBalance = Math.max(0, totalPrice - paid);
 
     const initialPayment = paid > 0 ? [{
       id: `pay_${Date.now()}`,
-      date: formatEthiopianDate(formData.date),
+      date: `${formData.date.year}-${String(formData.date.month).padStart(2, "0")}-${String(formData.date.day).padStart(2, "0")}`,
       amount: paid,
       bankPaymentEntry: formData.bankPaymentEntry || ""
     }] : [];
 
     try {
       if (editingPurchaseId) {
+
         const payload = {
+
           date: saveDate,
-          receiptNo: formData.receiptNumber,
+          receiptNo:
+            formData.receiptNumber,
+
           note: formData.bankPaymentEntry,
+
           itemName: formData.itemType,
+
           quantity: qty,
+
           unitPrice: price,
+
           totalPrice,
-          paidAmount: paid,
+
+          paidAmount: paid
+
         };
 
-        const response = await api.patch(`/ledger/${editingPurchaseId}`, payload);
+
+        const response = await api.patch(
+          `/ledger/${editingPurchaseId}`,
+          payload
+        );
+
+
         const updatedLedger = response.data;
 
+
         setCustomers((prevCustomers) =>
+
           prevCustomers.map((cust) => {
+
             if (String(cust.id) === String(activeCustomer.id)) {
+
               return {
+
                 ...cust,
-                purchases: cust.purchases.map((p) => {
-                  if (p.id === editingPurchaseId) {
-                    return {
-                      ...p,
-                      date: formatEthiopianDate(updatedLedger.date),
-                      receiptNumber: updatedLedger.receiptNo,
-                      bankPaymentEntry: updatedLedger.note || "",
-                      itemType: updatedLedger.itemName || "",
-                      quantity: Number(updatedLedger.quantity),
-                      unitPrice: Number(updatedLedger.unitPrice),
-                      totalPrice: Number(updatedLedger.totalPrice),
-                      paidAmount: Number(updatedLedger.paidAmount),
-                      remainingBalance: Number(updatedLedger.totalPrice) - Number(updatedLedger.paidAmount),
-                    };
-                  }
-                  return p;
-                }),
+
+                purchases:
+
+                  cust.purchases.map((p) => {
+
+                    if (p.id === editingPurchaseId) {
+
+                      return {
+
+                        ...p,
+
+                        date:
+                          updatedLedger.date.split("T")[0],
+
+                        receiptNumber:
+                          updatedLedger.receiptNo,
+
+                        bankPaymentEntry:
+                          updatedLedger.note || "",
+
+                        itemType:
+                          updatedLedger.itemName || "",
+
+                        quantity:
+                          Number(updatedLedger.quantity),
+
+                        unitPrice:
+                          Number(updatedLedger.unitPrice),
+
+                        totalPrice:
+                          Number(updatedLedger.totalPrice),
+
+                        paidAmount:
+                          Number(updatedLedger.paidAmount),
+
+                        remainingBalance:
+                          Number(updatedLedger.totalPrice) -
+                          Number(updatedLedger.paidAmount),
+
+                      };
+
+                    }
+
+                    return p;
+
+                  })
+
               };
+
             }
+
+
             return cust;
+
           })
+
         );
-      } else {
+
+
+      }
+      else {
+
         const payload = {
+
           memberId: activeCustomer.id,
+
           date: saveDate,
           receiptNo: formData.receiptNumber,
+
           itemName: formData.itemType,
+
           note: formData.bankPaymentEntry,
+
           quantity: qty,
+
           unitPrice: price,
-          paidAmount: paid,
+
+          paidAmount: paid
+
         };
 
-        const response = await api.post("/ledger", payload);
+        const response = await api.post(
+          "/ledger",
+          payload
+        );
+
+
         const ledger = response.data;
 
+
         const newPurchase = {
+
           id: ledger.id,
-          date: formatEthiopianDate(ledger.date),
-          receiptNumber: ledger.receiptNo,
-          bankPaymentEntry: ledger.note || "",
-          itemType: ledger.itemName,
-          quantity: Number(ledger.quantity),
-          unitPrice: Number(ledger.unitPrice),
-          totalPrice: Number(ledger.totalPrice),
-          paidAmount: Number(ledger.paidAmount),
-          remainingBalance: Number(ledger.totalPrice) - Number(ledger.paidAmount),
-          paymentHistory: initialPayment,
+
+          date: ledger.date.split("T")[0],
+
+          receiptNumber:
+            ledger.receiptNo,
+
+          bankPaymentEntry:
+            ledger.note || "",
+
+          itemType:
+            ledger.itemName,
+          quantity:
+            Number(ledger.quantity),
+
+          unitPrice:
+            Number(ledger.unitPrice),
+
+          totalPrice:
+            Number(ledger.totalPrice),
+
+          paidAmount:
+            Number(ledger.paidAmount),
+
+          remainingBalance:
+            Number(ledger.totalPrice) -
+            Number(ledger.paidAmount),
+
+
+          paymentHistory:
+            initialPayment
         };
 
+
         setCustomers((prevCustomers) =>
+
           prevCustomers.map((cust) => {
+
             if (String(cust.id) === String(activeCustomer.id)) {
+
               return {
+
                 ...cust,
-                purchases: [newPurchase, ...(cust.purchases || [])],
+
+                purchases: [
+                  newPurchase,
+                  ...(cust.purchases || [])
+                ]
+
               };
+
             }
+
             return cust;
+
           })
+
         );
+
       }
 
       setIsModalOpen(false);
+
       Swal.fire({
         icon: "success",
-        title: editingPurchaseId ? "Updated Successfully!" : "Added Successfully!",
+        title: editingPurchaseId
+          ? "Updated Successfully!"
+          : "Added Successfully!",
+        text: editingPurchaseId
+          ? "Purchase information updated."
+          : "New purchase recorded.",
         timer: 1500,
         showConfirmButton: false,
       });
-    } catch (err) {
+    }
+    catch (err) {
+
       Swal.fire({
         icon: "error",
         title: "Save Failed",
         text: "Unable to save transaction.",
       });
+
     }
   };
 
-  // FIX: Normalize payment date format to string upon recording
+  // ADD INDIVIDUAL PAYMENT ENTRY (DATE-BASED PAYMENT RECORD)
   const handleAddPaymentSubmit = async (e) => {
     e.preventDefault();
     if (!selectedPurchaseForPayment) return;
 
     const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
-    const remainingBalance = Number(selectedPurchaseForPayment.remainingBalance) || 0;
-
-    if (newPaymentAmount <= 0 || newPaymentAmount > remainingBalance) {
-      Swal.fire({
-        icon: "warning",
-        title: "Invalid Amount",
-        text: `Enter an amount between 1 and ${remainingBalance.toFixed(2)} ETB.`,
-      });
-      return;
-    }
+    const ethYear = paymentFormData.date.year;
+    const ethMonth = paymentFormData.date.month;
+    const ethDay = paymentFormData.date.day;
 
     const gregorianPaymentDate = toGregorian(
-      paymentFormData.date.year,
-      paymentFormData.date.month,
-      paymentFormData.date.day
+      ethYear,
+      ethMonth,
+      ethDay
     );
 
     const paymentDate = `${gregorianPaymentDate[0]}-${String(gregorianPaymentDate[1]).padStart(2, "0")}-${String(gregorianPaymentDate[2]).padStart(2, "0")}`;
 
-    try {
-      const response = await api.post("/payments", {
-        ledgerId: selectedPurchaseForPayment.id,
-        date: paymentDate,
-        amount: newPaymentAmount,
-        bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
+
+    const paymentPayload = {
+
+      ledgerId: selectedPurchaseForPayment.id,
+
+      date: paymentDate,
+
+      amount: newPaymentAmount,
+
+      bankPaymentEntry:
+        paymentFormData.bankPaymentEntry || ""
+
+    };
+    if (newPaymentAmount <= 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid Amount",
+        text: "Please enter a valid payment amount.",
       });
+      return;
+    }
+
+    try {
+      const response = await api.post(
+        "/payments",
+        paymentPayload
+      );
+
 
       const savedPayment = response.data;
-      const formattedDateStr = `${paymentFormData.date.year}-${String(paymentFormData.date.month).padStart(2, "0")}-${String(paymentFormData.date.day).padStart(2, "0")}`;
-
       setCustomers((prevCustomers) =>
         prevCustomers.map((cust) => {
           if (String(cust.id) === String(activeCustomer.id)) {
@@ -425,19 +645,25 @@ const handlePrint = () => {
                 if (p.id === selectedPurchaseForPayment.id) {
                   const existingHistory = p.paymentHistory || [];
                   const newHistoryEntry = {
-                    id: savedPayment?.id || `pay_${Date.now()}`,
-                    date: formattedDateStr,
+                    id: `pay_${Date.now()}`,
+                    date: `${paymentFormData.date.year}-${String(
+                      paymentFormData.date.month
+                    ).padStart(2, "0")}-${String(
+                      paymentFormData.date.day
+                    ).padStart(2, "0")}`,
                     amount: newPaymentAmount,
                     bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
                   };
-
                   const updatedHistory = [...existingHistory, newHistoryEntry];
-                  const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + Number(pay.amount || 0), 0);
+
+                  const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
+                  const updatedRemainingBalance = Math.max(0, p.totalPrice - updatedPaidAmount);
 
                   return {
                     ...p,
                     paidAmount: updatedPaidAmount,
-                    remainingBalance: Math.max(0, Number(p.totalPrice) - updatedPaidAmount),
+                    remainingBalance: updatedRemainingBalance,
+                    bankPaymentEntry: paymentFormData.bankPaymentEntry || p.bankPaymentEntry,
                     paymentHistory: updatedHistory,
                   };
                 }
@@ -449,66 +675,97 @@ const handlePrint = () => {
         })
       );
 
-      setIsPaymentModalOpen(false);
-      setSelectedPurchaseForPayment(null);
-
       Swal.fire({
         icon: "success",
         title: "Payment Recorded!",
+        text: "Payment history updated successfully.",
         timer: 1500,
         showConfirmButton: false,
       });
-
-      await fetchCustomers();
+      fetchCustomers();
     } catch (err) {
-      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Payment Failed",
-        text: err.response?.data?.message || "Unable to record payment.",
+        text: "Unable to record payment.",
       });
     }
   };
 
+  // 3. SETTLE BALANCE IN BACKEND & LOCAL STATE
+
+  // 4. DELETE TRANSACTION FROM BACKEND & LOCAL STATE
   const handleDeletePurchase = async (purchaseId) => {
+
     const result = await Swal.fire({
       title: "Delete Transaction?",
       text: "This action cannot be undone.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
       confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
     });
 
     if (!result.isConfirmed) return;
 
+
     try {
-      await api.delete(`/ledger/${purchaseId}`);
+
+      await api.delete(
+        `/ledger/${purchaseId}`
+
+
+      );
+
       Swal.fire({
         icon: "success",
         title: "Deleted!",
+        text: "Transaction deleted successfully.",
         timer: 1500,
         showConfirmButton: false,
       });
       setCustomers((prevCustomers) =>
+
         prevCustomers.map((cust) => {
+
           if (String(cust.id) === String(activeCustomer.id)) {
+
             return {
+
               ...cust,
-              purchases: cust.purchases.filter((p) => p.id !== purchaseId),
+
+              purchases:
+
+                cust.purchases.filter(
+                  (p) => p.id !== purchaseId
+                )
+
             };
+
           }
+
           return cust;
+
         })
+
       );
+
+
     } catch (error) {
+
       console.error(error);
+
       Swal.fire({
         icon: "error",
         title: "Delete Failed",
         text: "Unable to delete the transaction.",
       });
+
     }
+
   };
   if (loading) {
     return (
@@ -645,14 +902,7 @@ const handlePrint = () => {
             </div>
             <div className="text-right text-xs text-gray-600">
               <p className="font-bold text-gray-800">Date / ቀን:</p>
-              <p>
-                {(() => {
-                  const today = getTodayEthiopian();
-                  return `${today.year}-${String(today.month).padStart(2, "0")}-${String(
-                    today.day
-                  ).padStart(2, "0")}`;
-                })()}
-              </p>
+              <p>{new Date().toISOString().split("T")[0]}</p>
             </div>
           </div>
 
@@ -795,14 +1045,29 @@ const handlePrint = () => {
                                       <div className="text-[11px] text-gray-600 font-medium space-y-1">
                                         <p className="font-bold text-gray-700">📜 Payment History / የክፍያ ታሪክ:</p>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-1">
-                                          {item.paymentHistory.map((pay) => (
-                                            <div key={pay.id} className="bg-white p-1.5 rounded border border-gray-200 flex justify-between items-center shadow-2xs">
+                                          {item.paymentHistory.map((pay, index) => (
+                                            <div
+                                              key={pay.id}
+                                              className="bg-white p-1.5 rounded border border-gray-200 flex justify-between items-center shadow-2xs"
+                                            >
                                               <span>
-                                                📅 {pay.date}
-
+                                                📅{" "}
+                                                {index === 0
+                                                  ? item.date
+                                                  : typeof pay.date === "object"
+                                                    ? `${pay.date.year}-${pay.date.month}-${pay.date.day}`
+                                                    : pay.date}
                                               </span>
-                                              <span className="font-bold text-green-700">{Number(pay.amount).toFixed(2)} ETB</span>
-                                              {pay.bankPaymentEntry && <span className="text-[10px] text-gray-400">({pay.bankPaymentEntry})</span>}
+
+                                              <span className="font-bold text-green-700">
+                                                {Number(pay.amount).toFixed(2)} ETB
+                                              </span>
+
+                                              {pay.bankPaymentEntry && (
+                                                <span className="text-[10px] text-gray-400">
+                                                  ({pay.bankPaymentEntry})
+                                                </span>
+                                              )}
                                             </div>
                                           ))}
                                         </div>
@@ -824,380 +1089,377 @@ const handlePrint = () => {
         </div>
 
         {/* Modal: Add/Edit Purchase */}
-        {/* Modal: Add Payment */}
-        {isPaymentModalOpen &&
-          selectedPurchaseForPayment && (
-            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-center p-4 no-print">
-
-              <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
-
-                {/* Header */}
-                <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-
-                  <div>
-                    <h3 className="text-md font-bold text-gray-800">
-                      Record Payment / ክፍያ መዝግብ
-                    </h3>
-
-                    <p className="text-xs text-gray-500 mt-1">
-                      Purchase payment information
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPaymentModalOpen(false);
-                      setSelectedPurchaseForPayment(null);
-                    }}
-                    className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
-                  >
-                    ✕
-                  </button>
-
-                </div>
-
-
-                <form
-                  onSubmit={handleAddPaymentSubmit}
-                  className="p-5 flex flex-col gap-4 text-xs"
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-center p-4 no-print">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-md font-bold text-gray-800">
+                  {editingPurchaseId ? "Edit Transaction" : `New Entry for ${activeCustomer.customerName}`}
+                </h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
                 >
-
-                  {/* PURCHASE INFORMATION */}
-
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-
-                    <h4 className="font-bold text-gray-700 mb-3 text-sm">
-                      Purchase Information / የግዢ መረጃ
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-3">
-
-                      {/* Receipt */}
-                      <div>
-                        <p className="text-gray-400 font-semibold">
-                          Receipt No
-                        </p>
-
-                        <p className="font-bold text-gray-800 mt-1">
-                          {selectedPurchaseForPayment.receiptNumber ||
-                            "-"}
-                        </p>
-                      </div>
-
-
-                      {/* Item */}
-                      <div>
-                        <p className="text-gray-400 font-semibold">
-                          Item Type / የዱቄት አይነት
-                        </p>
-
-                        <p className="font-bold text-gray-800 mt-1">
-                          {selectedPurchaseForPayment.itemType ||
-                            "-"}
-                        </p>
-                      </div>
-
-
-                      {/* Quantity */}
-                      <div>
-                        <p className="text-gray-400 font-semibold">
-                          Quantity / ብዛት
-                        </p>
-
-                        <p className="font-bold text-gray-800 mt-1">
-                          {selectedPurchaseForPayment.quantity}
-                        </p>
-                      </div>
-
-
-                      {/* Unit Price */}
-                      <div>
-                        <p className="text-gray-400 font-semibold">
-                          Unit Price / የአንዱ ዋጋ
-                        </p>
-
-                        <p className="font-bold text-gray-800 mt-1">
-                          {Number(
-                            selectedPurchaseForPayment.unitPrice
-                          ).toFixed(2)}{" "}
-                          ETB
-                        </p>
-                      </div>
-
-
-                      {/* Total */}
-                      <div>
-                        <p className="text-gray-400 font-semibold">
-                          Total Price / ጠቅላላ ዋጋ
-                        </p>
-
-                        <p className="font-bold text-gray-900 mt-1">
-                          {Number(
-                            selectedPurchaseForPayment.totalPrice
-                          ).toFixed(2)}{" "}
-                          ETB
-                        </p>
-                      </div>
-
-
-                      {/* Paid */}
-                      <div>
-                        <p className="text-gray-400 font-semibold">
-                          Already Paid / የተከፈለ
-                        </p>
-
-                        <p className="font-bold text-green-700 mt-1">
-                          {Number(
-                            selectedPurchaseForPayment.paidAmount
-                          ).toFixed(2)}{" "}
-                          ETB
-                        </p>
-                      </div>
-
-                    </div>
-
-
-                    {/* Remaining */}
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-
-                      <p className="text-red-600 font-semibold">
-                        Remaining Balance / ቀሪ ሂሳብ
-                      </p>
-
-                      <p className="text-xl font-extrabold text-red-700 mt-1">
-                        {Number(
-                          selectedPurchaseForPayment.remainingBalance
-                        ).toFixed(2)}{" "}
-                        ETB
-                      </p>
-
-                    </div>
-
-                  </div>
-
-
-                  {/* PAYMENT INFORMATION */}
-
-                  <div className="border-t border-gray-200 pt-4">
-
-                    <h4 className="font-bold text-gray-700 mb-3 text-sm">
-                      New Payment / አዲስ ክፍያ
-                    </h4>
-
-
-                    {/* Ethiopian Date */}
-
-                    <div>
-
-                      <label className="block mb-1 font-semibold text-gray-600">
-                        Payment Date / የክፍያ ቀን *
-                      </label>
-
-                      <div className="grid grid-cols-3 gap-2">
-
-                        {/* Year */}
-                        <select
-                          value={paymentFormData.date.year}
-                          onChange={(e) =>
-                            setPaymentFormData((prev) => ({
-                              ...prev,
-                              date: {
-                                ...prev.date,
-                                year: Number(
-                                  e.target.value
-                                ),
-                              },
-                            }))
-                          }
-                          required
-                          className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                        >
-                          {Array.from(
-                            { length: 20 },
-                            (_, i) => {
-                              const currentYear =
-                                getTodayEthiopian().year;
-
-                              return (
-                                <option
-                                  key={i}
-                                  value={currentYear - 10 + i}
-                                >
-                                  {currentYear - 10 + i}
-                                </option>
-                              );
-                            }
-                          )}
-                        </select>
-
-
-                        {/* Month */}
-                        <select
-                          value={paymentFormData.date.month}
-                          onChange={(e) =>
-                            setPaymentFormData((prev) => ({
-                              ...prev,
-                              date: {
-                                ...prev.date,
-                                month: Number(
-                                  e.target.value
-                                ),
-                              },
-                            }))
-                          }
-                          required
-                          className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                        >
-                          {[
-                            "መስከረም",
-                            "ጥቅምት",
-                            "ኅዳር",
-                            "ታኅሣሥ",
-                            "ጥር",
-                            "የካቲት",
-                            "መጋቢት",
-                            "ሚያዚያ",
-                            "ግንቦት",
-                            "ሰኔ",
-                            "ሐምሌ",
-                            "ነሐሴ",
-                            "ጳጉሜ",
-                          ].map((monthName, index) => (
-                            <option
-                              key={index}
-                              value={index + 1}
-                            >
-                              {monthName}
-                            </option>
-                          ))}
-                        </select>
-
-
-                        {/* Day */}
-                        <select
-                          value={paymentFormData.date.day}
-                          onChange={(e) =>
-                            setPaymentFormData((prev) => ({
-                              ...prev,
-                              date: {
-                                ...prev.date,
-                                day: Number(
-                                  e.target.value
-                                ),
-                              },
-                            }))
-                          }
-                          required
-                          className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                        >
-                          {Array.from(
-                            { length: 30 },
-                            (_, i) => (
-                              <option
-                                key={i}
-                                value={i + 1}
-                              >
-                                {i + 1}
-                              </option>
-                            )
-                          )}
-                        </select>
-
-                      </div>
-
-                    </div>
-
-
-                    {/* Payment Amount */}
-
-                    <div className="mt-3">
-
-                      <label className="block mb-1 font-semibold text-gray-600">
-                        New Payment Amount / የክፍያ መጠን *
-                      </label>
-
-                      <input
-                        type="number"
-                        name="amount"
-                        min="1"
-                        max={
-                          selectedPurchaseForPayment.remainingBalance
-                        }
-                        step="0.01"
-                        value={paymentFormData.amount}
-                        onChange={handlePaymentFormChange}
-                        required
-                        placeholder="e.g. 500"
-                        className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                      />
-
-                      <p className="text-[11px] text-gray-400 mt-1">
-                        Maximum:
-                        {" "}
-                        {Number(
-                          selectedPurchaseForPayment.remainingBalance
-                        ).toFixed(2)}{" "}
-                        ETB
-                      </p>
-
-                    </div>
-
-
-                    {/* Bank Reference */}
-
-                    <div className="mt-3">
-
-                      <label className="block mb-1 font-semibold text-gray-600">
-                        Bank Ref / Transaction No
-                      </label>
-
-                      <input
-                        type="text"
-                        name="bankPaymentEntry"
-                        value={
-                          paymentFormData.bankPaymentEntry
-                        }
-                        onChange={handlePaymentFormChange}
-                        placeholder="CBE-..., TELEBIRR-..."
-                        className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  {/* BUTTONS */}
-
-                  <div className="flex justify-end gap-2 mt-2 pt-3 border-t border-gray-100">
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsPaymentModalOpen(false);
-                        setSelectedPurchaseForPayment(null);
-                      }}
-                      className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
-                    >
-                      Cancel / ሰርዝ
-                    </button>
-
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-[#5516DA] text-white rounded-lg hover:bg-[#450ec2] transition-all font-semibold cursor-pointer"
-                    >
-                      Save Payment / ክፍያ መዝግብ
-                    </button>
-
-                  </div>
-
-                </form>
-
+                  ✕
+                </button>
               </div>
 
+              <form onSubmit={handleFormSubmit} className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Date (ቀን) *</label>
+                  {/* Ethiopian Year */}
+                  <select
+                    value={formData.date.year}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      date: {
+                        ...prev.date,
+                        year: Number(e.target.value)
+                      }
+                    }))}
+                    className="p-2 border rounded"
+                  >
+
+                    {
+                      Array.from({ length: 20 }, (_, i) => (
+                        <option key={i} value={2010 + i}>
+                          {2010 + i}
+                        </option>
+                      ))
+                    }
+
+                  </select>
+
+
+                  {/* Ethiopian Month */}
+                  <select
+                    value={formData.date.month}
+                    onChange={(e) =>
+                      setFormData(prev => ({
+                        ...prev,
+                        date: {
+                          ...prev.date,
+                          month: Number(e.target.value)
+                        }
+                      }))
+                    }
+                    className="p-2 border rounded"
+                  >
+                    {[
+                      "መስከረም",
+                      "ጥቅምት",
+                      "ኅዳር",
+                      "ታኅሣሥ",
+                      "ጥር",
+                      "የካቲት",
+                      "መጋቢት",
+                      "ሚያዚያ",
+                      "ግንቦት",
+                      "ሰኔ",
+                      "ሐምሌ",
+                      "ነሐሴ",
+                      "ጳጉሜ"
+                    ].map((monthName, index) => (
+                      <option key={index} value={index + 1}>
+                        {monthName}
+                      </option>
+                    ))}
+                  </select>
+
+
+
+                  {/* Ethiopian Day */}
+                  <select
+                    value={formData.date.day}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      date: {
+                        ...prev.date,
+                        day: Number(e.target.value)
+                      }
+                    }))}
+                    className="p-2 border rounded"
+                  >
+
+                    {
+                      Array.from({ length: 30 }, (_, i) => (
+                        <option key={i} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))
+                    }
+
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Receipt No *</label>
+                  <input
+                    type="text"
+                    name="receiptNumber"
+                    value={formData.receiptNumber}
+                    onChange={(e) => {
+                      handleFormChange(e);
+                      checkReceiptExists(e.target.value);
+                    }}
+                    required
+                    placeholder="REC-..."
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+
+                  <p
+                    className={`text-sm mt-1 ${receiptAvailable ? "text-green-600" : "text-red-600"
+                      }`}
+                  >
+                    {receiptStatus}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block mb-1 font-semibold text-gray-600">Item Type (የዱቄት አይነት) *</label>
+                  <input
+                    type="text"
+                    name="itemType"
+                    value={formData.itemType}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="e.g. የስንዴ ዱቄት 50ኪ.ግ / ፉስካ..."
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Quantity *</label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="1"
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Unit Price (ETB) *</label>
+                  <input
+                    type="number"
+                    name="unitPrice"
+                    min="0"
+                    step="0.01"
+                    value={formData.unitPrice}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="0.00"
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Paid Amount (ETB) *</label>
+                  <input
+                    type="number"
+                    name="paidAmount"
+                    min="0"
+                    step="0.01"
+                    value={formData.paidAmount}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="0.00"
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Bank Ref / Transaction No</label>
+                  <input
+                    type="text"
+                    name="bankPaymentEntry"
+                    value={formData.bankPaymentEntry}
+                    onChange={handleFormChange}
+                    placeholder="CBE-..., TELEBIRR-..."
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={async () => {
+
+                      const result = await Swal.fire({
+                        title: "Cancel?",
+                        text: "Your entered data will be lost.",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, Cancel",
+                        cancelButtonText: "Continue Editing",
+                      });
+
+                      if (result.isConfirmed) {
+                        setIsModalOpen(false);
+                      }
+
+                    }}
+                    className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
+                  >
+                    Cancel / ሰርዝ
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#5516DA] text-white rounded-lg hover:bg-[#450ec2] transition-all font-semibold cursor-pointer"
+                  >
+                    {editingPurchaseId ? "Save Changes" : "Add Entry / መዝግብ"}
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Modal: Add Payment with Date Calendar */}
+        {isPaymentModalOpen && selectedPurchaseForPayment && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-center p-4 no-print">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+                <div>
+                  <h3 className="text-md font-bold text-gray-800">
+                    Record Payment / ክፍያ መዝግብ
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Remaining: <span className="text-red-600 font-bold">{selectedPurchaseForPayment.remainingBalance.toFixed(2)} ETB</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleAddPaymentSubmit} className="p-5 flex flex-col gap-3 text-xs">
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Payment Date (የክፍያ ቀን) *</label>
+                  {/* Ethiopian Year */}
+                  <select
+                    value={paymentFormData.date.year}
+                    onChange={(e) =>
+                      setPaymentFormData((prev) => ({
+                        ...prev,
+                        date: {
+                          ...prev.date,
+                          year: Number(e.target.value),
+                        },
+                      }))
+                    }
+                    className="p-2 border border-gray-300 rounded"
+                  >
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <option key={i} value={2010 + i}>
+                        {2010 + i}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Ethiopian Month */}
+                  <select
+                    value={paymentFormData.date.month}
+                    onChange={(e) =>
+                      setPaymentFormData((prev) => ({
+                        ...prev,
+                        date: {
+                          ...prev.date,
+                          month: Number(e.target.value),
+                        },
+                      }))
+                    }
+                    className="p-2 border border-gray-300 rounded"
+                  >
+                    {[
+                      "መስከረም",
+                      "ጥቅምት",
+                      "ኅዳር",
+                      "ታኅሣሥ",
+                      "ጥር",
+                      "የካቲት",
+                      "መጋቢት",
+                      "ሚያዚያ",
+                      "ግንቦት",
+                      "ሰኔ",
+                      "ሐምሌ",
+                      "ነሐሴ",
+                      "ጳጉሜ",
+                    ].map((monthName, index) => (
+                      <option key={index} value={index + 1}>
+                        {monthName}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Ethiopian Day */}
+                  <select
+                    value={paymentFormData.date.day}
+                    onChange={(e) =>
+                      setPaymentFormData((prev) => ({
+                        ...prev,
+                        date: {
+                          ...prev.date,
+                          day: Number(e.target.value),
+                        },
+                      }))
+                    }
+                    className="p-2 border border-gray-300 rounded"
+                  >
+                    {Array.from({ length: 30 }, (_, i) => (
+                      <option key={i} value={i + 1}>
+                        {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Payment Amount (ክፍያ መጠን - ETB) *</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    min="1"
+                    max={selectedPurchaseForPayment.remainingBalance}
+                    step="0.01"
+                    value={paymentFormData.amount}
+                    onChange={handlePaymentFormChange}
+                    required
+                    placeholder="e.g. 500"
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold text-gray-600">Bank Ref / Transaction No (የባንክ ማረጋገጫ)</label>
+                  <input
+                    type="text"
+                    name="bankPaymentEntry"
+                    value={paymentFormData.bankPaymentEntry}
+                    onChange={handlePaymentFormChange}
+                    placeholder="CBE-..., TELEBIRR-..."
+                    className="w-full p-2 border border-gray-300 rounded outline-none focus:ring-2 focus:ring-[#5516DA]"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaymentModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
+                  >
+                    Cancel / ሰርዝ
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold cursor-pointer"
+                  >
+                    Save Payment / ክፍያ መዝግብ
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </CenterLayout>
   );
