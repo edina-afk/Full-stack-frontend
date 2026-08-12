@@ -224,43 +224,46 @@ export default function ManageEvent() {
     navigate(`/usermanagement/${customer.id}`);
   };
 
+ const handleDelete = async (id) => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "This customer will be permanently deleted!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#5516DA",
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  });
 
-  const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This customer will be permanently deleted!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#5516DA",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
+  if (!result.isConfirmed) return;
+
+  try {
+    await api.delete(`/members/${id}`);
+
+    // Remove the deleted customer immediately from the frontend
+    setCustomers((prevCustomers) =>
+      prevCustomers.filter((customer) => customer.id !== id)
+    );
+
+    Swal.fire({
+      title: "Deleted!",
+      text: "Customer deleted successfully.",
+      icon: "success",
+      timer: 2000,
+      showConfirmButton: false,
     });
 
-    if (!result.isConfirmed) return;
+  } catch (err) {
+    console.error("DELETE ERROR:", err.response?.data || err);
 
-    try {
-      await api.delete(`/members/${id}`);
-
-      await fetchMembers();
-
-      Swal.fire({
-        title: "Deleted!",
-        text: "Customer deleted successfully.",
-        icon: "success",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      console.error("DELETE ERROR:", err.response?.data || err);
-
-      Swal.fire({
-        title: "Error!",
-        text: err.response?.data?.message || "Failed to delete customer.",
-        icon: "error",
-      });
-    }
-  };
+    Swal.fire({
+      title: "Error!",
+      text: err.response?.data?.message || "Failed to delete customer.",
+      icon: "error",
+    });
+  }
+};
   const exportPDF = () => {
     window.print();
   };
