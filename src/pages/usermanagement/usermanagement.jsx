@@ -45,7 +45,9 @@ export default function UserManagement() {
   // Modal State for adding individual payments (Payment Calendar/History)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState(null);
+ const today = new Date();
 
+<<<<<<< HEAD
   const [todayEthYear, todayEthMonth, todayEthDay] = toEthiopian(
     today.getFullYear(),
     today.getMonth() + 1,
@@ -62,6 +64,24 @@ export default function UserManagement() {
     bankPaymentEntry: "",
   });
 
+=======
+const [todayEthYear, todayEthMonth, todayEthDay] = toEthiopian(
+  today.getFullYear(),
+  today.getMonth() + 1,
+  today.getDate()
+);
+
+const [paymentFormData, setPaymentFormData] = useState({
+  date: {
+    year: todayEthYear,
+    month: todayEthMonth,
+    day: todayEthDay,
+  },
+  amount: "",
+  bankPaymentEntry: "",
+});
+
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
   // Keep selectedCustomerId in sync if route param changes
   useEffect(() => {
     if (id) {
@@ -101,6 +121,7 @@ export default function UserManagement() {
             gDate.getMonth() + 1,
             gDate.getDate()
           );
+<<<<<<< HEAD
 
           const totalPrice = Number(ledger.totalPrice || 0);
 
@@ -121,6 +142,21 @@ export default function UserManagement() {
               bankPaymentEntry: pay.bankPaymentEntry || "",
             };
           });
+=======
+
+          const totalPrice = Number(ledger.totalPrice || 0);
+
+        const payments = (ledger.payments || []).map((pay) => {
+  const paymentDate = new Date(pay.date);
+
+  const [paymentEthYear, paymentEthMonth, paymentEthDay] =
+    toEthiopian(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth() + 1,
+      paymentDate.getDate()
+    );
+
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
           const paidAmount = payments.reduce(
             (sum, p) => sum + Number(p.amount || 0),
             Number(ledger.paidAmount || 0)
@@ -129,7 +165,11 @@ export default function UserManagement() {
           return {
             id: ledger.id,
 
+<<<<<<< HEAD
             date: `${paymentEthYear}-${String(paymentEthMonth).padStart(2, "0")}-${String(paymentEthDay).padStart(2, "0")}`,
+=======
+             date: `${paymentEthYear}-${String(paymentEthMonth).padStart(2, "0")}-${String(paymentEthDay).padStart(2, "0")}`,
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
             receiptNumber: ledger.receiptNo,
 
             bankPaymentEntry: ledger.note || "",
@@ -303,6 +343,7 @@ export default function UserManagement() {
     setIsModalOpen(true);
   };
 
+<<<<<<< HEAD
   const openPaymentModal = (purchase) => {
     const today = new Date();
 
@@ -311,9 +352,32 @@ export default function UserManagement() {
       today.getMonth() + 1,
       today.getDate()
     );
+=======
+   const openPaymentModal = (purchase) => {
+  const today = new Date();
+
+  const [year, month, day] = toEthiopian(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate()
+  );
+
+  setSelectedPurchaseForPayment(purchase);
+
+  setPaymentFormData({
+    date: {
+      year,
+      month,
+      day,
+    },
+    amount: "",
+    bankPaymentEntry: "",
+  });
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
 
     setSelectedPurchaseForPayment(purchase);
 
+<<<<<<< HEAD
     setPaymentFormData({
       date: {
         year,
@@ -327,6 +391,8 @@ export default function UserManagement() {
     setIsPaymentModalOpen(true);
   };
 
+=======
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
   // Trigger print view
   const handlePrint = () => {
     window.print();
@@ -595,8 +661,13 @@ export default function UserManagement() {
 
     const newPaymentAmount = parseFloat(paymentFormData.amount) || 0;
     const ethYear = paymentFormData.date.year;
+<<<<<<< HEAD
     const ethMonth = paymentFormData.date.month;
     const ethDay = paymentFormData.date.day;
+=======
+const ethMonth = paymentFormData.date.month;
+const ethDay = paymentFormData.date.day;
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
 
     const gregorianPaymentDate = toGregorian(
       ethYear,
@@ -645,6 +716,7 @@ export default function UserManagement() {
                 if (p.id === selectedPurchaseForPayment.id) {
                   const existingHistory = p.paymentHistory || [];
                   const newHistoryEntry = {
+<<<<<<< HEAD
                     id: `pay_${Date.now()}`,
                     date: `${paymentFormData.date.year}-${String(
                       paymentFormData.date.month
@@ -654,6 +726,17 @@ export default function UserManagement() {
                     amount: newPaymentAmount,
                     bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
                   };
+=======
+  id: `pay_${Date.now()}`,
+  date: `${paymentFormData.date.year}-${String(
+    paymentFormData.date.month
+  ).padStart(2, "0")}-${String(
+    paymentFormData.date.day
+  ).padStart(2, "0")}`,
+  amount: newPaymentAmount,
+  bankPaymentEntry: paymentFormData.bankPaymentEntry || "",
+};
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
                   const updatedHistory = [...existingHistory, newHistoryEntry];
 
                   const updatedPaidAmount = updatedHistory.reduce((sum, pay) => sum + pay.amount, 0);
@@ -1051,12 +1134,19 @@ export default function UserManagement() {
                                               className="bg-white p-1.5 rounded border border-gray-200 flex justify-between items-center shadow-2xs"
                                             >
                                               <span>
+<<<<<<< HEAD
                                                 📅{" "}
                                                 {index === 0
                                                   ? item.date
                                                   : typeof pay.date === "object"
                                                     ? `${pay.date.year}-${pay.date.month}-${pay.date.day}`
                                                     : pay.date}
+=======
+                                                📅  {index === 0 ? item.date : (
+        typeof pay.date === "object"
+          ? `${pay.date.year}-${pay.date.month}-${pay.date.day}`
+          : pay.date
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
                                               </span>
 
                                               <span className="font-bold text-green-700">
@@ -1337,6 +1427,7 @@ export default function UserManagement() {
               <form onSubmit={handleAddPaymentSubmit} className="p-5 flex flex-col gap-3 text-xs">
                 <div>
                   <label className="block mb-1 font-semibold text-gray-600">Payment Date (የክፍያ ቀን) *</label>
+<<<<<<< HEAD
                   {/* Ethiopian Year */}
                   <select
                     value={paymentFormData.date.year}
@@ -1413,6 +1504,84 @@ export default function UserManagement() {
                       </option>
                     ))}
                   </select>
+=======
+                    {/* Ethiopian Year */}
+    <select
+      value={paymentFormData.date.year}
+      onChange={(e) =>
+        setPaymentFormData((prev) => ({
+          ...prev,
+          date: {
+            ...prev.date,
+            year: Number(e.target.value),
+          },
+        }))
+      }
+      className="p-2 border border-gray-300 rounded"
+    >
+      {Array.from({ length: 20 }, (_, i) => (
+        <option key={i} value={2010 + i}>
+          {2010 + i}
+        </option>
+      ))}
+    </select>
+
+    {/* Ethiopian Month */}
+    <select
+      value={paymentFormData.date.month}
+      onChange={(e) =>
+        setPaymentFormData((prev) => ({
+          ...prev,
+          date: {
+            ...prev.date,
+            month: Number(e.target.value),
+          },
+        }))
+      }
+      className="p-2 border border-gray-300 rounded"
+    >
+      {[
+        "መስከረም",
+        "ጥቅምት",
+        "ኅዳር",
+        "ታኅሣሥ",
+        "ጥር",
+        "የካቲት",
+        "መጋቢት",
+        "ሚያዚያ",
+        "ግንቦት",
+        "ሰኔ",
+        "ሐምሌ",
+        "ነሐሴ",
+        "ጳጉሜ",
+      ].map((monthName, index) => (
+        <option key={index} value={index + 1}>
+          {monthName}
+        </option>
+      ))}
+    </select>
+
+    {/* Ethiopian Day */}
+    <select
+      value={paymentFormData.date.day}
+      onChange={(e) =>
+        setPaymentFormData((prev) => ({
+          ...prev,
+          date: {
+            ...prev.date,
+            day: Number(e.target.value),
+          },
+        }))
+      }
+      className="p-2 border border-gray-300 rounded"
+    >
+      {Array.from({ length: 30 }, (_, i) => (
+        <option key={i} value={i + 1}>
+          {i + 1}
+        </option>
+      ))}
+    </select>
+>>>>>>> 147a39e2bbe49491d17ac47dbb996d409d8c0435
                 </div>
                 <div>
                   <label className="block mb-1 font-semibold text-gray-600">Payment Amount (ክፍያ መጠን - ETB) *</label>
