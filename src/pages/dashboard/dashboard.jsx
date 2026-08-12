@@ -242,11 +242,7 @@ export default function ManageEvent() {
     console.log("USER FROM LOCAL STORAGE:", user);
     console.log("ROLE BEING SENT:", user?.role);
 
-    await api.delete(`/members/${id}`, {
-      headers: {
-        "user-role": user?.role,
-      },
-    });
+     await api.delete(`/members/${id}`);
 
     await fetchMembers();
 
