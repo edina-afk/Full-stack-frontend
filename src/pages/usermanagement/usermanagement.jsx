@@ -66,94 +66,94 @@ export default function UserManagement() {
     }
 
   }, [id]);
-  const fetchCustomers = async () => {
+   const fetchCustomers = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-    try {
-      setLoading(true);
+    const response = await api.get(`/members/${id}`);
 
-      const response = await api.get(`/members/${id}`);
+    const customer = response.data;
 
-      const customer = response.data;
+    console.log("CUSTOMER FROM API:", customer);
+    console.log("LEDGERS FROM API:", customer.ledgers);
 
-      const formattedCustomer = {
-        id: customer.id,
+    const formattedCustomer = {
+      id: customer.id,
+      customerName: customer.fullName,
+      phoneNumber: customer.phone,
 
-        customerName: customer.fullName,
+      purchases: (customer.ledgers || []).map((ledger) => {
+        const gDate = new Date(ledger.date);
 
-        phoneNumber: customer.phone,
+        const [ethYear, ethMonth, ethDay] = toEthiopian(
+          gDate.getUTCFullYear(),
+          gDate.getUTCMonth() + 1,
+          gDate.getUTCDate()
+        );
 
-        purchases: customer.ledgers?.map((ledger) => {
-          const gDate = new Date(ledger.date);
+        const totalPrice = Number(ledger.totalPrice || 0);
 
-          const [ethYear, ethMonth, ethDay] = toEthiopian(
-            gDate.getFullYear(),
-            gDate.getMonth() + 1,
-            gDate.getDate()
+        const payments = (ledger.payments || []).map((pay) => ({
+          ...pay,
+          date: pay.date
+            ? pay.date.split("T")[0]
+            : "",
+          amount: Number(pay.amount || 0),
+        }));
+
+        const paidAmount =
+          Number(ledger.paidAmount || 0) +
+          payments.reduce(
+            (sum, payment) => sum + Number(payment.amount || 0),
+            0
           );
 
-          const totalPrice = Number(ledger.totalPrice || 0);
+        return {
+          id: ledger.id,
 
-          const payments = (ledger.payments || []).map((pay) => ({
-            ...pay,
-            date: pay.date.split("T")[0]
-          }));
-          const paidAmount = payments.reduce(
-            (sum, p) => sum + Number(p.amount || 0),
-            Number(ledger.paidAmount || 0)
-          );
+          date: `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(
+            ethDay
+          ).padStart(2, "0")}`,
 
-          return {
-            id: ledger.id,
+          receiptNumber: ledger.receiptNo || "",
 
-            date: `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(ethDay).padStart(2, "0")}`,
+          bankPaymentEntry: ledger.note || "",
 
-            receiptNumber: ledger.receiptNo,
+          itemType: ledger.itemName || "",
 
-            bankPaymentEntry: ledger.note || "",
+          quantity: Number(ledger.quantity || 0),
 
-            itemType: ledger.itemName || "",
+          unitPrice: Number(ledger.unitPrice || 0),
 
+          totalPrice,
 
-            quantity:
-              Number(ledger.quantity || 0),
+          paidAmount,
 
-            unitPrice:
-              Number(ledger.unitPrice || 0),
+          remainingBalance: Math.max(
+            0,
+            totalPrice - paidAmount
+          ),
 
-            totalPrice,
+          paymentHistory: payments,
+        };
+      }),
+    };
 
-            paidAmount,
+    console.log("FORMATTED CUSTOMER:", formattedCustomer);
+    console.log("PURCHASES:", formattedCustomer.purchases);
 
-            remainingBalance:
-              Math.max(0, totalPrice - paidAmount),
-            paymentHistory: payments
-          };
+    setCustomers([formattedCustomer]);
+    setSelectedCustomerId(customer.id);
 
-        }) || []
-      };
+  } catch (error) {
+    console.error("FETCH CUSTOMER ERROR:", error);
 
-
-      setCustomers([formattedCustomer]);
-
-      setSelectedCustomerId(customer.id);
-
-
-    } catch (error) {
-
-      console.error(error);
-
-      setError(
-        "Failed to load customer data"
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  };
-
-
+    setError("Failed to load customer data");
+  } finally {
+    setLoading(false);
+  }
+};
   const [receiptStatus, setReceiptStatus] = useState("");
   const [receiptAvailable, setReceiptAvailable] = useState(true);
 
