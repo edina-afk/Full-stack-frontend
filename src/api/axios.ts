@@ -1,22 +1,41 @@
 import axios from "axios";
 
+const baseUrl = "https://api.mensursultan.com";
+
 const api = axios.create({
-  baseURL: "https://api.mensursultan.com",
+  baseURL: baseUrl,
 });
 
-api.interceptors.request.use((config) => {
-  const storedUser = window.localStorage.getItem("user");
+api.interceptors.request.use(
+  (config) => {
+    const storedUser = window.localStorage.getItem("user");
+    const token = window.localStorage.getItem("token");
 
-  if (storedUser) {
-    const user = JSON.parse(storedUser);
+    const authToken = token || (storedUser ? JSON.parse(storedUser)?.access_token : null);
 
-    if (user?.role) {
+    if (authToken) {
       config.headers = config.headers || {};
-      config.headers["user-role"] = user.role;
+      config.headers.Authorization = `Bearer ${authToken}`;
     }
-  }
 
-  return config;
-});
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+
+        if (user?.role) {
+          config.headers = config.headers || {};
+          delete config.headers["user-role"];
+        }
+      } catch (error) {
+        console.error("Invalid stored user data:", error);
+      }
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export default api;

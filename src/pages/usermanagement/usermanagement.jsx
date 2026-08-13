@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import CenterLayout from "../../component/pageLayout/centerLayout";
 import api from "../../api/axios";
 import Swal from "sweetalert2";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toGregorian, toEthiopian } from "ethiopian-date";
 
 export default function UserManagement() {
@@ -82,6 +84,14 @@ export default function UserManagement() {
       id: customer.id,
       customerName: customer.fullName,
       phoneNumber: customer.phone,
+      receiptNumber: customer.receiptNo || "-",
+      registrationDate: customer.createdAt
+        ? (() => {
+            const [year, month, day] = String(customer.createdAt).split("T")[0].split("-").map(Number);
+            const [ethYear, ethMonth, ethDay] = toEthiopian(year, month, day);
+            return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(ethDay).padStart(2, "0")}`;
+          })()
+        : "-",
 
       purchases: (customer.ledgers || []).map((ledger) => {
         const gDate = new Date(ledger.date);
@@ -255,20 +265,16 @@ export default function UserManagement() {
 
   const openEditModal = (purchase) => {
     setEditingPurchaseId(purchase.id);
-    const gDate = new Date(purchase.date);
 
-    const [year, month, day] = toEthiopian(
-      gDate.getFullYear(),
-      gDate.getMonth() + 1,
-      gDate.getDate()
-    );
-
+    const [year, month, day] = purchase.date
+      ? String(purchase.date).split("-").map(Number)
+      : [ethYear, ethMonth, ethDay];
 
     setFormData({
       date: {
         year,
         month,
-        day
+        day,
       },
       receiptNumber: purchase.receiptNumber,
       bankPaymentEntry: purchase.bankPaymentEntry || "",
@@ -291,9 +297,141 @@ export default function UserManagement() {
 
   };
 
-  // Trigger print view
-  const handlePrint = () => {
-    window.print();
+  const handleExportCustomerStatementPdf = async () => {
+    if (!activeCustomer) return;
+
+    const logoResponse = await fetch("/image.png");
+    const logoBlob = await logoResponse.blob();
+    const logoDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(logoBlob);
+    });
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const generatedDate = new Date().toLocaleDateString("en-ET", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+    doc.setFillColor(85, 22, 218);
+    doc.rect(14, 14, pageWidth - 28, 32, "F");
+    doc.addImage(logoDataUrl, "PNG", 20, 18, 18, 18);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Customer Statement", 42, 27);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Mansur Sultan Flour Factory", 42, 35);
+    doc.text(`Generated: ${generatedDate}`, pageWidth - 52, 35, { align: "right" });
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Customer Information", 14, 52);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const customerInfo = [
+      ["Customer Name", activeCustomer.customerName || "-"],
+      ["Phone Number", activeCustomer.phoneNumber || "-"],
+      ["Receipt Number", activeCustomer.receiptNumber || activeCustomer.purchases?.[0]?.receiptNumber || "-"],
+      ["Registration Date", activeCustomer.registrationDate || "-"],
+      ["Total Purchases", `${Number(activeCustomer.totalSpent || 0).toFixed(2)} ETB`],
+      ["Total Paid", `${Number(activeCustomer.totalPaid || 0).toFixed(2)} ETB`],
+      ["Remaining Balance", `${Number(activeCustomer.totalBalance || 0).toFixed(2)} ETB`],
+    ];
+
+    autoTable(doc, {
+      startY: 58,
+      body: customerInfo,
+      theme: "grid",
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      columnStyles: {
+        0: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: "bold", cellWidth: 52 },
+        1: { cellWidth: 110 },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    const purchaseTableBody = (activeCustomer.purchases || []).map((item) => [
+      item.date || "-",
+      item.itemType || "-",
+      String(item.quantity || 0),
+      `${Number(item.unitPrice || 0).toFixed(2)}`,
+      `${Number(item.totalPrice || 0).toFixed(2)}`,
+      `${Number(item.paidAmount || 0).toFixed(2)}`,
+      `${Number(item.remainingBalance || 0).toFixed(2)}`,
+      item.receiptNumber || "-",
+      item.bankPaymentEntry || "-",
+    ]);
+
+    let currentY = doc.lastAutoTable.finalY + 8;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Purchase / Ledger Details", 14, currentY);
+
+    autoTable(doc, {
+      startY: currentY + 4,
+      head: [["Date", "Item", "Qty", "Unit Price", "Total", "Paid", "Balance", "Receipt", "Bank Ref"]],
+      body: purchaseTableBody.length ? purchaseTableBody : [["-", "-", "-", "-", "-", "-", "-", "-", "-"]],
+      styles: { fontSize: 7, cellPadding: 2, overflow: "linebreak" },
+      headStyles: { fillColor: [85, 22, 218], textColor: [255, 255, 255], fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 14, right: 14 },
+      theme: "grid",
+      pageBreak: "auto",
+      didDrawPage: (data) => {
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber}`, pageWidth - 20, pageHeight - 10, { align: "right" });
+      },
+    });
+
+    const paymentRows = (activeCustomer.purchases || []).flatMap((item) =>
+      (item.paymentHistory || []).map((payment) => [
+        item.receiptNumber || "-",
+        payment.date || "-",
+        payment.bankPaymentEntry || "-",
+        `${Number(payment.amount || 0).toFixed(2)}`,
+      ])
+    );
+
+    if (paymentRows.length) {
+      const paymentY = doc.lastAutoTable.finalY + 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Payment Details", 14, paymentY);
+
+      autoTable(doc, {
+        startY: paymentY + 4,
+        head: [["Receipt", "Payment Date", "Bank Ref", "Amount"]],
+        body: paymentRows,
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 14, right: 14 },
+        theme: "grid",
+      });
+    }
+
+    const pdfBlob = doc.output("blob");
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${(activeCustomer.customerName || "customer").replace(/\s+/g, "-")}-statement.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // 2. CREATE OR UPDATE PURCHASE ENTRY IN BACKEND & LOCAL STATE
@@ -327,7 +465,7 @@ export default function UserManagement() {
 
     const initialPayment = paid > 0 ? [{
       id: `pay_${Date.now()}`,
-      date: `${formData.date.year}-${String(formData.date.month).padStart(2, "0")}-${String(formData.date.day).padStart(2, "0")}`,
+      date: saveDate, // payment dates must be Gregorian
       amount: paid,
       bankPaymentEntry: formData.bankPaymentEntry || ""
     }] : [];
@@ -528,6 +666,10 @@ export default function UserManagement() {
       }
 
       setIsModalOpen(false);
+
+      if (editingPurchaseId) {
+        navigate(-1);
+      }
 
       Swal.fire({
         icon: "success",
@@ -900,11 +1042,11 @@ export default function UserManagement() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 no-print w-full lg:w-auto">
 
                 <button
-                  onClick={handlePrint}
-                  className="bg-gray-800 hover:bg-gray-900 text-white font-semibold text-sm px-3 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
-                  title="Print or Save PDF Statement"
+                  onClick={handleExportCustomerStatementPdf}
+                  className="bg-[#5516DA] hover:bg-[#450ec2] text-white font-semibold text-sm px-3 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
+                  title="Export customer statement as PDF"
                 >
-                  🖨️ Print / PDF
+                  Export PDF
                 </button>
 
                 <button

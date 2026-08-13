@@ -69,22 +69,22 @@ const Signin = () => {
       console.log("LOGIN RESPONSE:", response.data);
 
       const user = response.data.user;
+      const normalizedRole = (user?.role || '').toString().toUpperCase().replace(/[^A-Z]/g, '');
 
-      if (user.role !== "SUPERADMIN" && user.role !== "ADMIN") {
+      if (normalizedRole !== "SUPERADMIN" && normalizedRole !== "ADMIN") {
         setErrors({
           email: "You do not have permission to access the system",
         });
         return;
       }
 
-      localStorage.setItem(
-        "token",
-        response.data.access_token
-      );
+      const authToken = response.data.access_token;
+
+      localStorage.setItem("token", authToken);
 
       localStorage.setItem(
         "user",
-        JSON.stringify(user)
+        JSON.stringify({ ...user, access_token: authToken })
       );
 
       setSubmitted(true);

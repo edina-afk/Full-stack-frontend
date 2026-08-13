@@ -4,13 +4,15 @@ import CenterLayout from "../../component/pageLayout/centerLayout";
 import { MdAdd, MdSearch, MdVisibility } from "react-icons/md";
 import { toEthiopian } from "ethiopian-date";
 import api from "../../api/axios";
+import Swal from "sweetalert2";
 
 
 
 export default function ManageEvent() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
-  const isSuperAdmin = user?.role === "SUPERADMIN";
+  const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+  const normalizeRole = (role) => (role || "").toString().toUpperCase().replace(/[^A-Z]/g, "");
+  const isSuperAdmin = normalizeRole(storedUser?.role) === "SUPERADMIN";
 
   const formatEthiopianDate = (date) => {
   if (!date) return "-";
@@ -29,6 +31,7 @@ export default function ManageEvent() {
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
 
     const customerList = customers.map((customer) => ({
@@ -70,6 +73,39 @@ export default function ManageEvent() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (customer) => {
+    const confirm = await Swal.fire({
+      title: `Delete ${customer.customerName}?`,
+      text: 'This will permanently remove the customer and all related purchases and payments.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setDeletingId(customer.id);
+      Swal.fire({ title: 'Deleting...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      await api.delete(`/members/${customer.id}`);
+
+      // remove from state immediately
+      setCustomers((prev) => prev.filter((c) => c.id !== customer.id));
+
+      Swal.close();
+      await Swal.fire('Deleted', 'Customer removed successfully.', 'success');
+    } catch (err) {
+      Swal.close();
+      console.error(err);
+      const msg = err?.response?.data?.message || err.message || 'Delete failed';
+      await Swal.fire('Error', msg, 'error');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -209,6 +245,16 @@ export default function ManageEvent() {
                           <MdVisibility className="text-base" />
                           <span>View / ዝርዝር</span>
                         </button>
+
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => handleDeleteCustomer(customer)}
+                            disabled={deletingId === customer.id}
+                            className="ml-2 inline-flex items-center justify-center gap-1 hover:opacity-90 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-md transition-colors text-xs cursor-pointer bg-red-600"
+                          >
+                            <span>{deletingId === customer.id ? 'Deleting...' : 'Delete'}</span>
+                          </button>
+                        )}
 
                       </td>
 

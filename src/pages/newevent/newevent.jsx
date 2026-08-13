@@ -147,8 +147,13 @@ export default function NewEvent() {
         receiptNo: formData.receiptNumber,
       });
 
-      const saveDate =
-        `${formData.ethiopianDate.year}-${String(formData.ethiopianDate.month).padStart(2, "0")}-${String(formData.ethiopianDate.day).padStart(2, "0")}`;
+      const greg = toGregorian(
+        formData.ethiopianDate.year,
+        formData.ethiopianDate.month,
+        formData.ethiopianDate.day,
+      );
+
+      const saveDate = `${greg[0]}-${String(greg[1]).padStart(2, '0')}-${String(greg[2]).padStart(2, '0')}`;
 
 
       const member = memberResponse.data;
