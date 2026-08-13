@@ -17,6 +17,42 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const parseGregorianDate = (value) => {
+    if (!value) return null;
+
+    const dateString = String(value).includes("T")
+      ? String(value).split("T")[0]
+      : String(value);
+
+    const [year, month, day] = dateString.split("-").map(Number);
+
+    if (
+      Number.isNaN(year) ||
+      Number.isNaN(month) ||
+      Number.isNaN(day)
+    ) {
+      return null;
+    }
+
+    return { year, month, day };
+  };
+
+  const formatEthiopianDate = (value) => {
+    const gregorianDate = parseGregorianDate(value);
+
+    if (!gregorianDate) return "-";
+
+    const [ethYear, ethMonth, ethDay] = toEthiopian(
+      gregorianDate.year,
+      gregorianDate.month,
+      gregorianDate.day
+    );
+
+    return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(
+      ethDay
+    ).padStart(2, "0")}`;
+  };
+
   const [selectedCustomerId, setSelectedCustomerId] = useState(id || null);
 
   // Modal State for adding/editing purchase
@@ -85,22 +121,14 @@ export default function UserManagement() {
       customerName: customer.fullName,
       phoneNumber: customer.phone,
       receiptNumber: customer.receiptNo || "-",
-      registrationDate: customer.createdAt
-        ? (() => {
-            const [year, month, day] = String(customer.createdAt).split("T")[0].split("-").map(Number);
-            const [ethYear, ethMonth, ethDay] = toEthiopian(year, month, day);
-            return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(ethDay).padStart(2, "0")}`;
-          })()
-        : "-",
+      registrationDate: formatEthiopianDate(customer.createdAt),
 
       purchases: (customer.ledgers || []).map((ledger) => {
-        const gDate = new Date(ledger.date);
+        const ledgerDate = parseGregorianDate(ledger.date);
 
-        const [ethYear, ethMonth, ethDay] = toEthiopian(
-          gDate.getUTCFullYear(),
-          gDate.getUTCMonth() + 1,
-          gDate.getUTCDate()
-        );
+        const [ethYear, ethMonth, ethDay] = ledgerDate
+          ? toEthiopian(ledgerDate.year, ledgerDate.month, ledgerDate.day)
+          : ["-", "-", "-"];
 
         const totalPrice = Number(ledger.totalPrice || 0);
 
@@ -666,10 +694,22 @@ export default function UserManagement() {
       }
 
       setIsModalOpen(false);
+      setEditingPurchaseId(null);
+      setFormData({
+        date: {
+          year: ethYear,
+          month: ethMonth,
+          day: ethDay,
+        },
+        receiptNumber: "",
+        bankPaymentEntry: "",
+        itemType: "",
+        quantity: "",
+        unitPrice: "",
+        paidAmount: "",
+      });
 
-      if (editingPurchaseId) {
-        navigate(-1);
-      }
+      await fetchCustomers();
 
       Swal.fire({
         icon: "success",

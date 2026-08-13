@@ -17,19 +17,35 @@ export default function ManageEvent() {
   const isSuperAdmin = normalizeRole(storedUser?.role) === "SUPERADMIN";
 
   const formatEthiopianDate = (date) => {
-  if (!date) return "-";
+    if (!date) return "-";
 
-  const dateString = String(date).split("T")[0];
-  const [year, month, day] = dateString.split("-").map(Number);
+    const dateString = String(date).split("T")[0];
+    const [year, month, day] = dateString.split("-").map(Number);
 
-  if (!year || !month || !day) return "-";
+    if (!year || !month || !day) return "-";
 
-  const [ethYear, ethMonth, ethDay] = toEthiopian(year, month, day);
+    const normalizedYear = Number(year);
+    const normalizedMonth = Number(month);
+    const normalizedDay = Number(day);
 
-  return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(
-    ethDay
-  ).padStart(2, "0")}`;
-};
+    if (
+      Number.isNaN(normalizedYear) ||
+      Number.isNaN(normalizedMonth) ||
+      Number.isNaN(normalizedDay)
+    ) {
+      return "-";
+    }
+
+    const [ethYear, ethMonth, ethDay] = toEthiopian(
+      normalizedYear,
+      normalizedMonth,
+      normalizedDay
+    );
+
+    return `${ethYear}-${String(ethMonth).padStart(2, "0")}-${String(
+      ethDay
+    ).padStart(2, "0")}`;
+  };
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
