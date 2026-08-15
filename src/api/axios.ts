@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const baseUrl = "https://api.mensursultan.com";
-
 const api = axios.create({
   baseURL: baseUrl,
 });
